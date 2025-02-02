@@ -1658,7 +1658,7 @@ void display_weapon_inventory(WINDOW *win, weapon_inventory *inventory) {
     box(win, 0, 0);
     if (inventory->itemCount > 0) {
         curs_set(FALSE);
-        mvwprintw(win, 1, 1, "Weapon Inventory:             ");
+        mvwprintw(win, 1, 1, "Weapon Inventory:      ");
         int line = 2;
         for (int i = 0; i < inventory->itemCount; i++) {
                 switch (inventory->items[i].type) {
