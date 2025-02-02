@@ -211,144 +211,12 @@ void *play_music(void *arg) {
 
 
 
-void draw_box(int y, int x, int height, int width) {
-    mvprintw(y, x, "┌");
-    mvprintw(y, x + width, "┐");
-    mvprintw(y + height, x, "└");
-    mvprintw(y + height, x + width, "┘");
-
-    for (int i = 1; i < width; i++) {
-        mvprintw(y, x + i, "─");
-        mvprintw(y + height, x + i, "─");
-    }
-
-    for (int i = 1; i < height; i++) {
-        mvprintw(y + i, x, "│");
-        mvprintw(y + i, x + width, "│");
-    }
-}
-
 int character_x = 3; 
 int character_y = 1; 
 int color = 20; 
 
-void draw_map(int start_y, int start_x, int color) {
-    init_color(20, 1000, 843, 0);  
-    init_pair(20, 20, COLOR_BLACK); 
-    init_color(22, 1000, 500, 0);  
-    init_pair(22, 22, COLOR_BLACK); 
-    init_color(24, 0, 0, 750);  
-    init_pair(24, 24, COLOR_BLACK);
-    init_color(26, 700, 1000, 1000); 
-    init_pair(26, 26, COLOR_BLACK);
-    init_color(28, 0, 700, 0);     
-    init_pair(28, 28, COLOR_BLACK); 
-
-    mvprintw(start_y, start_x, "-------"); 
 
 
-    for (int y = 1; y < 3 - 1; y++) {
-        mvprintw(start_y + y, start_x, "|"); 
-        for (int x = 1; x < 7 - 1; x++) {
-            if (x == character_x && y == character_y) {
-                attron(COLOR_PAIR(color));  
-                mvprintw(start_y + y, start_x + x, "@");  
-                attroff(COLOR_PAIR(color));  
-            } else {
-                mvprintw(start_y + y, start_x + x, ".");  
-            }
-        }
-        mvprintw(start_y + y, start_x + 7 - 1, "|"); 
-    }
-
-    mvprintw(start_y + 3 - 1, start_x, "-------");
-}
-
-void draw_menu(int color) { 
-    init_color(20, 1000, 843, 0);  
-    init_pair(20, 20, COLOR_BLACK); 
-    init_color(22, 1000, 500, 0);  
-    init_pair(22, 22, COLOR_BLACK);
-    init_color(24, 0, 0, 750);  
-    init_pair(24, 24, COLOR_BLACK);
-    init_color(26, 700, 1000, 1000); 
-    init_pair(26, 26, COLOR_BLACK); 
-    init_color(28, 0, 700, 0);     
-    init_pair(28, 28, COLOR_BLACK); 
-
-    clear();
-    refresh();
-    int height, width;
-    getmaxyx(stdscr, height, width);
-
-    int menu_height = 12;
-    int menu_width = 40;
-
-    int start_y = (height - menu_height) / 2;
-    int start_x = (width - menu_width) / 2;
-
-    draw_box(start_y, start_x, menu_height, menu_width);
-
-    mvprintw(start_y + 1, start_x + 12, "🎮 Game Settings 🎮");
-
-    mvprintw(start_y + 3, start_x + 4, "1. Character Color: ");
-    attron(COLOR_PAIR(color)); 
-    printw("███");
-    attroff(COLOR_PAIR(color));
-
-    mvprintw(start_y + 5, start_x + 4, "2. Game Difficulty: %s", difficulties[selected_difficulty]);
-    mvprintw(start_y + 7, start_x + 4, "3. Music: %s 🎵", music_options[music_on]);
-    mvprintw(start_y + 9, start_x + 4, "4. Select Track: %s", music_files[selected_music]);
-
-    draw_map(30, 30, color);  
-    mvprintw(start_y + 3 + (current_option * 2), start_x + 2, "➜");
-
-    mvprintw(start_y + 11, start_x + 2, "↑/↓ Move  </> Change  ⏎ Confirm");
-
-    refresh();
-}
-
-
-void update_score(const char *username, int score) {
-    FILE *file = fopen("users.txt", "r");
-    FILE *temp = fopen(TEMP_FILE, "w");
-    
-    if (!file || !temp) {
-        perror("Error opening file");
-        exit(EXIT_FAILURE);
-    }
-    
-    char line[MAX_LINE_LENGTH];
-    int found = 0;
-    
-    while (fgets(line, sizeof(line), file)) {
-        char name[50], email[100], password[50];
-        int current_score, games_played;
-        
-        if (sscanf(line, "%s %s %s %d %d", name, email, password, &current_score, &games_played) == 5) {
-            if (strcmp(name, username) == 0) {  
-                current_score += score;
-                games_played += 1;
-                found = 1;
-            }
-            fprintf(temp, "%s %s %s %d %d\n", name, email, password, current_score, games_played);
-        } else {
-            fputs(line, temp);
-        }
-    }
-    
-    fclose(file);
-    fclose(temp);
-    
-    if (found) {
-        remove("users.txt");
-        rename(TEMP_FILE, "users.txt");
-        printf("Score updated successfully!\n");
-    } else {
-        remove(TEMP_FILE);
-        printf("User not found!\n");
-    }
-}
 
 
 void draw_border();
@@ -415,6 +283,13 @@ void generateSingleRoomMap(char mapafterreading[HEIGHT][WIDTH]);
 void settings_menu(int *music_on_ptr, int *selected_music_ptr , int *color,int *selected_difficulty);
 void create_weapon_inventory(const char *username);
 void forgot_password_page(struct User users[], int userCount);
+char* generate_random_password(int length);
+void save_game_info(const char *username, int level, int score, int gold);
+void draw_menu(int color);
+void load_game_info(const char *username, int *level, int *score, int *gold);
+void update_score(const char *username, int score);
+
+
 
 void save_seen_points(Point **mapafterreading, int rows, int cols, const char *filename) {
     FILE *file = fopen(filename, "w");
@@ -452,91 +327,6 @@ void load_seen_points(Point **mapafterreading, int rows, int cols, const char *f
 int camefromgame = 0;
 int spawn_cehck_x;
 int spawn_check_y;
-
-
-
-
-
-
-
-
-
-
-
-
-char* generate_random_password(int length) {
-    if (length < 3) {
-        length = 3;
-    }
-    
-    char* password = malloc(length + 1);
-    if (!password) {
-        return NULL; 
-    }
-
-    const char *upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const char *lower = "abcdefghijklmnopqrstuvwxyz";
-    const char *digits = "0123456789";
-    const char *allChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-    password[0] = upper[rand() % strlen(upper)];
-    password[1] = lower[rand() % strlen(lower)];
-    password[2] = digits[rand() % strlen(digits)];
-
-    for (int i = 3; i < length; i++) {
-        password[i] = allChars[rand() % strlen(allChars)];
-    }
-
-    for (int i = 0; i < length; i++) {
-        int j = rand() % length;
-        char temp = password[i];
-        password[i] = password[j];
-        password[j] = temp;
-    }
-    
-    password[length] = '\0';  
-    return password;
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 int main() {
@@ -637,7 +427,6 @@ start_menu:
 
             struct User users[MAX_USERS];
             int userCount = loadUsers(users);
-            //printw("%d",userCount);
             int test_log = login(users, userCount);
 
             if (userCount > 0) {
@@ -743,6 +532,7 @@ refresh();
     int health = 50, max_health = 50;
     int previous_health = 50;
     int cheat_code = 0;
+    load_game_info(username, &lvl, &score, &gold_score);
 game: 
 if(lvl == 6){
     goto end;
@@ -762,14 +552,13 @@ health = previous_health;
 
     clear();
 
-    //=========================================
     int rows = 0, cols = 0;
     Point **mapafterreading = NULL;
     int x = 0, y = 0; 
     int spawn_x = 0, spawn_y = 0;
 
     int speed = 1; // سرعت اولیه
-    int damage = 1; // آسیب اولیه
+    int damage = 1; // دمیج اولیه
     char file_path[200];
     sprintf(file_path,"%s/map%d.txt",username,lvl );
     FILE *file = fopen(file_path, "r");
@@ -892,14 +681,13 @@ load_seen_points(mapafterreading, rows, cols, filename);
     int weapon_inventory_start_y = 20;
     int weapon_inventory_start_x = COLS - weapon_inventory_width;
     WINDOW *weapon_inventory_win = newwin(weapon_inventory_height, weapon_inventory_width, weapon_inventory_start_y, weapon_inventory_start_x);
-//===========================================================
+
     WINDOW *weapon_monster_win = newwin(10, 30, 40,weapon_inventory_start_x );  
     Player player = {x, y, health};
     Monster monsters[100]; 
     int numMonsters ;
     findMonsters(weapon_monster_win, mapafterreading, monsters, &numMonsters, rows, cols);  
 
-//============================================================
     display_mapafterreading(mapafterreading, rows, cols, color,&cheat_code);
     display_health_bar(&player, max_health);
     display_gold_score(gold_score);
@@ -1149,6 +937,7 @@ int fisrt_cheat = 0;
     
     saveMapToFileForSave(mapafterreading, rows, cols, file_path,spawn_cehck_x,spawn_check_y);
     save_seen_points(mapafterreading, rows, cols, filename);
+    save_game_info(username, lvl, score, gold_score);
     clear();
 goto setting;
 
@@ -1869,7 +1658,7 @@ void display_weapon_inventory(WINDOW *win, weapon_inventory *inventory) {
     box(win, 0, 0);
     if (inventory->itemCount > 0) {
         curs_set(FALSE);
-        mvwprintw(win, 1, 1, "Weapon Inventory:");
+        mvwprintw(win, 1, 1, "Weapon Inventory:             ");
         int line = 2;
         for (int i = 0; i < inventory->itemCount; i++) {
                 switch (inventory->items[i].type) {
@@ -2141,7 +1930,39 @@ void display_food_inventoy(WINDOW *food_inventoy_win, food_inventoy *food_invent
     wrefresh(food_inventoy_win);
 }
 
+char* generate_random_password(int length) {
+    if (length < 3) {
+        length = 3;
+    }
+    
+    char* password = malloc(length + 1);
+    if (!password) {
+        return NULL; 
+    }
 
+    const char *upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    const char *lower = "abcdefghijklmnopqrstuvwxyz";
+    const char *digits = "0123456789";
+    const char *allChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+
+    password[0] = upper[rand() % strlen(upper)];
+    password[1] = lower[rand() % strlen(lower)];
+    password[2] = digits[rand() % strlen(digits)];
+
+    for (int i = 3; i < length; i++) {
+        password[i] = allChars[rand() % strlen(allChars)];
+    }
+
+    for (int i = 0; i < length; i++) {
+        int j = rand() % length;
+        char temp = password[i];
+        password[i] = password[j];
+        password[j] = temp;
+    }
+    
+    password[length] = '\0';  
+    return password;
+}
 
 void add_food_to_food_inventoy(food_inventoy *food_inventoy, FoodType type, int quantity, WINDOW *food_inventoy_win) {
     bool exists = false;
@@ -2162,7 +1983,6 @@ void add_food_to_food_inventoy(food_inventoy *food_inventoy, FoodType type, int 
     werase(food_inventoy_win);
     display_food_inventoy(food_inventoy_win, food_inventoy);
 }
-
 
 void decrease_health_over_time(Player *player, int *time_without_food) {
     if (*time_without_food > 60 && *time_without_food %10 ==0) { 
@@ -2299,7 +2119,6 @@ void display_mapafterreading(Point **mapafterreading, int rows, int cols, int co
     refresh();
 }
 
-
 void reveal_points(Point **mapafterreading, int char_x, int char_y, int rows, int cols, int range) {
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
@@ -2379,7 +2198,6 @@ void display_gold_score(int gold_score) {
     mvprintw(50, 70, "Gold Score: %d", gold_score);
     refresh();
 }
-
 
 void display_hunger(int hunger) {
         init_color(48, 1000, 500, 0);
@@ -2544,7 +2362,7 @@ void add_spell_to_inventory(spell_inventory *inventory, SpellType type, int quan
     werase(win);
     display_spell_inventory(win, inventory);
 }
-//====================================
+
 char createMessageWindow(const char *message) {
     int height = 5;
     int width = 40; 
@@ -2582,7 +2400,6 @@ int check_for_combat(Player *player, Monster monsters[], int numMonsters) {
         }
     }
 }
-
 
 void findMonsters(WINDOW *win, Point **mapafterreading, Monster monsters[], int *numMonsters, int rows, int cols) {
     *numMonsters = 0;
@@ -2768,7 +2585,6 @@ void shootWeaponWithDirection(WINDOW *win,weapon_inventory *inventory,Monster mo
         y += directionY;
     }
 }
-
 
 void move_character(int *lvl,Point **mapafterreading, int *x, int *y, int new_x, int new_y, int rows, int cols, int spawn_x, int spawn_y, int *health, int *gold_score, food_inventoy *food_inventoy, WINDOW *food_inventoy_win, spell_inventory *spell_inventory, WINDOW *spell_inventory_win, weapon_inventory *weapon_inventory, WINDOW *weapon_inventory_win) {
     static char previous_symbol = '>';
@@ -3145,7 +2961,6 @@ void create_weapon_inventory(const char *username) {
     printf("%s created successfully in folder %s!\n", filepath, username);
 }
 
-
 void forgot_password_page(struct User users[], int userCount) {
     WINDOW *win = newwin(LINES, COLS, 0, 0);
     if (!win) {
@@ -3188,4 +3003,168 @@ void forgot_password_page(struct User users[], int userCount) {
     delwin(win);
 }
 
+void save_game_info(const char *username, int level, int score, int gold) {    
+    char file_path[256];
+    snprintf(file_path, sizeof(file_path), "%s/saved_info.txt", username);
+    
+    FILE *file = fopen(file_path, "w");
+    if (file == NULL) {
+        return;
+    }
+    fprintf(file, "Level: %d\n", level);
+    fprintf(file, "Score: %d\n", score);
+    fprintf(file, "Gold: %d\n", gold);
+    fclose(file);
+
+}
+
+void draw_box(int y, int x, int height, int width) {
+    mvprintw(y, x, "┌");
+    mvprintw(y, x + width, "┐");
+    mvprintw(y + height, x, "└");
+    mvprintw(y + height, x + width, "┘");
+
+    for (int i = 1; i < width; i++) {
+        mvprintw(y, x + i, "─");
+        mvprintw(y + height, x + i, "─");
+    }
+
+    for (int i = 1; i < height; i++) {
+        mvprintw(y + i, x, "│");
+        mvprintw(y + i, x + width, "│");
+    }
+}
+
+void draw_map(int start_y, int start_x, int color) {
+    init_color(20, 1000, 843, 0);  
+    init_pair(20, 20, COLOR_BLACK); 
+    init_color(22, 1000, 500, 0);  
+    init_pair(22, 22, COLOR_BLACK); 
+    init_color(24, 0, 0, 750);  
+    init_pair(24, 24, COLOR_BLACK);
+    init_color(26, 700, 1000, 1000); 
+    init_pair(26, 26, COLOR_BLACK);
+    init_color(28, 0, 700, 0);     
+    init_pair(28, 28, COLOR_BLACK); 
+
+    mvprintw(start_y, start_x, "-------"); 
+
+
+    for (int y = 1; y < 3 - 1; y++) {
+        mvprintw(start_y + y, start_x, "|"); 
+        for (int x = 1; x < 7 - 1; x++) {
+            if (x == character_x && y == character_y) {
+                attron(COLOR_PAIR(color));  
+                mvprintw(start_y + y, start_x + x, "@");  
+                attroff(COLOR_PAIR(color));  
+            } else {
+                mvprintw(start_y + y, start_x + x, ".");  
+            }
+        }
+        mvprintw(start_y + y, start_x + 7 - 1, "|"); 
+    }
+
+    mvprintw(start_y + 3 - 1, start_x, "-------");
+}
+
+void draw_menu(int color) { 
+    init_color(20, 1000, 843, 0);  
+    init_pair(20, 20, COLOR_BLACK); 
+    init_color(22, 1000, 500, 0);  
+    init_pair(22, 22, COLOR_BLACK);
+    init_color(24, 0, 0, 750);  
+    init_pair(24, 24, COLOR_BLACK);
+    init_color(26, 700, 1000, 1000); 
+    init_pair(26, 26, COLOR_BLACK); 
+    init_color(28, 0, 700, 0);     
+    init_pair(28, 28, COLOR_BLACK); 
+
+    clear();
+    refresh();
+    int height, width;
+    getmaxyx(stdscr, height, width);
+
+    int menu_height = 12;
+    int menu_width = 40;
+
+    int start_y = (height - menu_height) / 2;
+    int start_x = (width - menu_width) / 2;
+
+    draw_box(start_y, start_x, menu_height, menu_width);
+
+    mvprintw(start_y + 1, start_x + 12, "🎮 Game Settings 🎮");
+
+    mvprintw(start_y + 3, start_x + 4, "1. Character Color: ");
+    attron(COLOR_PAIR(color)); 
+    printw("███");
+    attroff(COLOR_PAIR(color));
+
+    mvprintw(start_y + 5, start_x + 4, "2. Game Difficulty: %s", difficulties[selected_difficulty]);
+    mvprintw(start_y + 7, start_x + 4, "3. Music: %s 🎵", music_options[music_on]);
+    mvprintw(start_y + 9, start_x + 4, "4. Select Track: %s", music_files[selected_music]);
+
+    draw_map(30, 30, color);  
+    mvprintw(start_y + 3 + (current_option * 2), start_x + 2, "➜");
+
+    mvprintw(start_y + 11, start_x + 2, "↑/↓ Move  </> Change  ⏎ Confirm");
+
+    refresh();
+}
+
+void load_game_info(const char *username, int *level, int *score, int *gold) {
+    char file_path[256];
+    snprintf(file_path, sizeof(file_path), "%s/saved_info.txt", username);
+    
+    FILE *file = fopen(file_path, "r");
+    if (file == NULL) {
+        return;
+    }
+    
+    fscanf(file, "Level: %d\n", level);
+    fscanf(file, "Score: %d\n", score);
+    fscanf(file, "Gold: %d\n", gold);
+    fclose(file);
+
+}
+
+void update_score(const char *username, int score) {
+    FILE *file = fopen("users.txt", "r");
+    FILE *temp = fopen(TEMP_FILE, "w");
+    
+    if (!file || !temp) {
+        perror("Error opening file");
+        exit(EXIT_FAILURE);
+    }
+    
+    char line[MAX_LINE_LENGTH];
+    int found = 0;
+    
+    while (fgets(line, sizeof(line), file)) {
+        char name[50], email[100], password[50];
+        int current_score, games_played;
+        
+        if (sscanf(line, "%s %s %s %d %d", name, email, password, &current_score, &games_played) == 5) {
+            if (strcmp(name, username) == 0) {  
+                current_score += score;
+                games_played += 1;
+                found = 1;
+            }
+            fprintf(temp, "%s %s %s %d %d\n", name, email, password, current_score, games_played);
+        } else {
+            fputs(line, temp);
+        }
+    }
+    
+    fclose(file);
+    fclose(temp);
+    
+    if (found) {
+        remove("users.txt");
+        rename(TEMP_FILE, "users.txt");
+        printf("Score updated successfully!\n");
+    } else {
+        remove(TEMP_FILE);
+        printf("User not found!\n");
+    }
+}
 
