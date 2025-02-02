@@ -285,9 +285,9 @@ void settings_menu(int *music_on_ptr, int *selected_music_ptr , int *color,int *
 void create_weapon_inventory(const char *username);
 void forgot_password_page(struct User users[], int userCount);
 char* generate_random_password(int length);
-void save_game_info(const char *username, int level, int score, int gold);
+void save_game_info(const char *username, int level, int score, int gold, int haskey);
 void draw_menu(int color);
-void load_game_info(const char *username, int *level, int *score, int *gold);
+void load_game_info(const char *username, int *level, int *score, int *gold, int* haskey);
 void update_score(const char *username, int score);
 
 
@@ -533,7 +533,7 @@ refresh();
     int health = 50, max_health = 50;
     int previous_health = 50;
     int cheat_code = 0;
-    load_game_info(username, &lvl, &score, &gold_score);
+    load_game_info(username, &lvl, &score, &gold_score , &haskey);
 game: 
 if(lvl == 6){
     goto end;
@@ -662,7 +662,7 @@ load_seen_points(mapafterreading, rows, cols, filename);
     //add_weapon_to_inventory(&weapon_inventory, MACE, 1, NULL);
     // add_weapon_to_inventory(&weapon_inventory, DAGGER, 10, NULL);
     // add_weapon_to_inventory(&weapon_inventory, MAGIC_WAND, 1, NULL);
-     add_weapon_to_inventory(&weapon_inventory, ARROW, 10, NULL);
+     //add_weapon_to_inventory(&weapon_inventory, ARROW, 10, NULL);
      //add_weapon_to_inventory(&weapon_inventory, SWORD, 1, NULL);
 
     int food_inventoy_height = 10;
@@ -938,7 +938,7 @@ int fisrt_cheat = 0;
     
     saveMapToFileForSave(mapafterreading, rows, cols, file_path,spawn_cehck_x,spawn_check_y);
     save_seen_points(mapafterreading, rows, cols, filename);
-    save_game_info(username, lvl, score, gold_score);
+    save_game_info(username, lvl, score, gold_score, haskey);
     clear();
 goto setting;
 
@@ -1405,7 +1405,6 @@ void replaceSingleDoors(char mapafterreading[HEIGHT][WIDTH], Room rooms[ROOMS]) 
 
 void placeCodePoint(char mapafterreading[HEIGHT][WIDTH], Room rooms[ROOMS]) {
     int x, y, roomIndex;
-    srand(time(NULL));
     while (1) {
         roomIndex = rand() % ROOMS;
         if (countRoomDoors(mapafterreading, &rooms[roomIndex]) == 1) continue; 
@@ -2870,7 +2869,7 @@ void move_character(int *lvl,Point **mapafterreading, int *x, int *y, int new_x,
         *x = new_x;
         *y = new_y;
     }else if( mapafterreading[new_x][new_y].symbol == '%'){
-        if(has_key){
+        if(haskey){
            mapafterreading[new_x][new_y].symbol = '6'; 
            if(rand() % 10 == 0){
             haskey = 0;
@@ -3155,7 +3154,7 @@ void forgot_password_page(struct User users[], int userCount) {
     delwin(win);
 }
 
-void save_game_info(const char *username, int level, int score, int gold) {    
+void save_game_info(const char *username, int level, int score, int gold, int haskey) {    
     char file_path[256];
     snprintf(file_path, sizeof(file_path), "%s/saved_info.txt", username);
     
@@ -3166,6 +3165,7 @@ void save_game_info(const char *username, int level, int score, int gold) {
     fprintf(file, "Level: %d\n", level);
     fprintf(file, "Score: %d\n", score);
     fprintf(file, "Gold: %d\n", gold);
+    fprintf(file, "Key: %d\n", haskey);
     fclose(file);
 
 }
@@ -3263,7 +3263,7 @@ void draw_menu(int color) {
     refresh();
 }
 
-void load_game_info(const char *username, int *level, int *score, int *gold) {
+void load_game_info(const char *username, int *level, int *score, int *gold,int *haskey) {
     char file_path[256];
     snprintf(file_path, sizeof(file_path), "%s/saved_info.txt", username);
     
@@ -3275,6 +3275,7 @@ void load_game_info(const char *username, int *level, int *score, int *gold) {
     fscanf(file, "Level: %d\n", level);
     fscanf(file, "Score: %d\n", score);
     fscanf(file, "Gold: %d\n", gold);
+    fscanf(file, "Key: %d\n", haskey);
     fclose(file);
 
 }
