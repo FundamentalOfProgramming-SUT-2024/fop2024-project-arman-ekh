@@ -2702,6 +2702,7 @@ void move_character(int *lvl,Point **mapafterreading, int *x, int *y, int new_x,
         || mapafterreading[new_x][new_y].symbol == 's'  || mapafterreading[new_x][new_y].symbol == 'I' || mapafterreading[new_x][new_y].symbol == 'h'
         || mapafterreading[new_x][new_y].symbol == 'm'|| mapafterreading[new_x][new_y].symbol == 'p'|| mapafterreading[new_x][new_y].symbol == 'i'
         || mapafterreading[new_x][new_y].symbol == 'k' || mapafterreading[new_x][new_y].symbol == '*'|| mapafterreading[new_x][new_y].symbol == '&' 
+        || mapafterreading[new_x][new_y].symbol == 'K' 
         ) ? '.' : mapafterreading[new_x][new_y].symbol;
 
         if (mapafterreading[new_x][new_y].trap) {
