@@ -22,16 +22,8 @@
 #define WIDTH 120
 #define HEIGHT 45
 #define ROOMS 8
-#define MAX_LINE_LENGTH 256
-
-#define NUM_OPTIONS 4
-#define NUM_COLORS 3
-#define NUM_DIFFICULTY 3
-#define NUM_MUSIC 3
 
 
-
-#define TEMP_FILE "temp_users.txt"
 
 #define SHIFT_KEY 0x100  //دکمه شیفت
 
@@ -126,6 +118,29 @@ GameState gameState = EXPLORE;
 Turn currentTurn = PLAYER_TURN;
 
 
+
+
+int score;
+
+
+char massage_resault;
+
+void initializeMonsters(Monster monsters[], int *numMonsters) {
+    *numMonsters = 5;
+    for (int i = 0; i < *numMonsters; i++) {
+        monsters[i].type = "DFGUS"[i];
+        monsters[i].health = (i + 1) * 5;
+        monsters[i].move_count = 0;
+        monsters[i].alive = true;
+        monsters[i].damage = 5;
+    }
+}
+
+
+
+
+
+
 int nor = 8;
 typedef struct {
     int x, y, width, height;
@@ -136,11 +151,7 @@ struct User {
     char password[MAX_LENGTH];
     char email[MAX_LENGTH];
     int score;
-    int gamesplayed;
 };
-
-
-
 
 char username[MAX_NAME_LENGTH];
 char dirname[150];
@@ -148,17 +159,16 @@ char mapafterreading[HEIGHT][WIDTH];
 char nameoftheplayer[100];
 
 
-int score = 0;
-int games_played;
 
-
-char massage_resault;
 
 int current_music_index = 0; 
 int music_enabled = 1;
 
 
-
+#define NUM_OPTIONS 4
+#define NUM_COLORS 3
+#define NUM_DIFFICULTY 3
+#define NUM_MUSIC 3
 
 int current_option = 0;
 int selected_color = 1;
@@ -211,9 +221,150 @@ void *play_music(void *arg) {
 
 
 
+
+
+
+void draw_box(int y, int x, int height, int width) {
+    mvprintw(y, x, "┌");
+    mvprintw(y, x + width, "┐");
+    mvprintw(y + height, x, "└");
+    mvprintw(y + height, x + width, "┘");
+
+    for (int i = 1; i < width; i++) {
+        mvprintw(y, x + i, "─");
+        mvprintw(y + height, x + i, "─");
+    }
+
+    for (int i = 1; i < height; i++) {
+        mvprintw(y + i, x, "│");
+        mvprintw(y + i, x + width, "│");
+    }
+}
+
 int character_x = 3; 
 int character_y = 1; 
 int color = 20; 
+
+void draw_map(int start_y, int start_x, int color) {
+    init_color(20, 1000, 843, 0);  
+    init_pair(20, 20, COLOR_BLACK); 
+    init_color(22, 1000, 500, 0);  
+    init_pair(22, 22, COLOR_BLACK); 
+    init_color(28, 0, 700, 0);     
+    init_pair(28, 28, COLOR_BLACK); 
+
+    mvprintw(start_y, start_x, "-------"); 
+
+
+    for (int y = 1; y < 3 - 1; y++) {
+        mvprintw(start_y + y, start_x, "|"); 
+        for (int x = 1; x < 7 - 1; x++) {
+            if (x == character_x && y == character_y) {
+                attron(COLOR_PAIR(color));  
+                mvprintw(start_y + y, start_x + x, "@");  
+                attroff(COLOR_PAIR(color));  
+            } else {
+                mvprintw(start_y + y, start_x + x, ".");  
+            }
+        }
+        mvprintw(start_y + y, start_x + 7 - 1, "|"); 
+    }
+
+    mvprintw(start_y + 3 - 1, start_x, "-------");
+}
+
+void draw_menu(int color) { 
+    init_color(20, 1000, 843, 0);  
+    init_pair(20, 20, COLOR_BLACK); 
+    init_color(22, 1000, 500, 0);  
+    init_pair(22, 22, COLOR_BLACK); 
+    init_color(28, 0, 700, 0);     
+    init_pair(28, 28, COLOR_BLACK); 
+
+    clear();
+    refresh();
+    int height, width;
+    getmaxyx(stdscr, height, width);
+
+    int menu_height = 12;
+    int menu_width = 40;
+
+    int start_y = (height - menu_height) / 2;
+    int start_x = (width - menu_width) / 2;
+
+    draw_box(start_y, start_x, menu_height, menu_width);
+
+    mvprintw(start_y + 1, start_x + 12, "🎮 Game Settings 🎮");
+
+    mvprintw(start_y + 3, start_x + 4, "1. Character Color: ");
+    attron(COLOR_PAIR(color)); 
+    printw("███");
+    attroff(COLOR_PAIR(color));
+
+    mvprintw(start_y + 5, start_x + 4, "2. Game Difficulty: %s", difficulties[selected_difficulty]);
+    mvprintw(start_y + 7, start_x + 4, "3. Music: %s 🎵", music_options[music_on]);
+    mvprintw(start_y + 9, start_x + 4, "4. Select Track: %s", music_files[selected_music]);
+
+    draw_map(30, 30, color);  
+    mvprintw(start_y + 3 + (current_option * 2), start_x + 2, "➜");
+
+    mvprintw(start_y + 11, start_x + 2, "↑/↓ Move  </> Change  ⏎ Confirm");
+
+    refresh();
+}
+
+void settings_menu(int *music_on_ptr, int *selected_music_ptr , int *color) {
+    while (1) {
+        draw_menu(*color);   
+        int ch = getch(); 
+
+        if (ch == KEY_UP) {
+            if (current_option > 0) current_option--;
+        } else if (ch == KEY_DOWN) {
+            if (current_option < NUM_OPTIONS - 1) current_option++;
+        } else if (ch == KEY_LEFT || ch == KEY_RIGHT) {
+            if (current_option == 0) {  
+                *color = (*color == 28) ? 20 : (*color + 2);  
+            } else if (current_option == 1) {  
+                selected_difficulty = (selected_difficulty + 1) % NUM_DIFFICULTY;
+            } else if (current_option == 2) {  
+                *music_on_ptr = !(*music_on_ptr);  
+            } else if (current_option == 3) {  
+                *selected_music_ptr = (*selected_music_ptr + 1) % NUM_MUSIC;
+            }
+        } else if (ch == 10) { 
+            break;  
+        }
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -251,7 +402,7 @@ void display_food_inventoy(WINDOW *food_inventoy_win, food_inventoy *food_invent
 void add_food_to_food_inventoy(food_inventoy *food_inventoy, FoodType type, int quantity, WINDOW *food_inventoy_win);
 void consume_food(food_inventoy *food_inventory, Player *Player, int max_health, int *time_without_food, WINDOW *food_inventory_win);
 void decrease_health_over_time(Player *player, int *time_without_food) ;
-void display_mapafterreading(Point **mapafterreading, int rows, int cols,int color,int *cheat_code);
+void display_mapafterreading(Point **mapafterreading, int rows, int cols,int color);
 void reveal_points(Point **mapafterreading, int char_x, int char_y, int rows, int cols, int range);
 void display_game_over() ;
 void display_health_bar(Player *player ,int max_health);
@@ -273,23 +424,12 @@ void monster_attack(Player *player, Monster monsters[], int numMonsters, WINDOW 
 void use_weapone(Player *player, Monster *monster, weapon_inventory *inventory, WINDOW *win,Point **mapafterreading, int *damage_index);
 void moveMonsters(Player *player, Monster monsters[], int numMonsters, Point **mapafterreading);
 void shootWeaponWithDirection(WINDOW *win,weapon_inventory *inventory,Monster monsters[], int numMonsters, Player *player, int directionX, int directionY, Point **mapafterreading, int rows, int cols);
-void monsterspawn(char mapafterreading[HEIGHT][WIDTH], Room *room,int *selected_difficulty);
+void monsterspawn(char mapafterreading[HEIGHT][WIDTH], Room *room);
 void displayScoreboard(WINDOW *win,struct User players[], int count, int start, const char *username);
 int readPlayersFromFile(const char *filename,struct User players[]);
 int comparePlayers(const void *a, const void *b);
 void saveMapToFile(Point **map, int rows, int cols, const char *filename) ;
 void saveMapToFileForSave(Point **map, int rows, int cols, const char *filename,int spawn_check_x , int spawn_check_y);
-void generateSingleRoomMap(char mapafterreading[HEIGHT][WIDTH]);
-void settings_menu(int *music_on_ptr, int *selected_music_ptr , int *color,int *selected_difficulty);
-void create_weapon_inventory(const char *username);
-void forgot_password_page(struct User users[], int userCount);
-char* generate_random_password(int length);
-void save_game_info(const char *username, int level, int score, int gold);
-void draw_menu(int color);
-void load_game_info(const char *username, int *level, int *score, int *gold);
-void update_score(const char *username, int score);
-
-
 
 void save_seen_points(Point **mapafterreading, int rows, int cols, const char *filename) {
     FILE *file = fopen(filename, "w");
@@ -328,9 +468,8 @@ int camefromgame = 0;
 int spawn_cehck_x;
 int spawn_check_y;
 
-
 int main() {
-    srand(time(NULL));
+
 
     pthread_t music_thread;
     pthread_create(&music_thread, NULL, play_music, NULL);
@@ -427,6 +566,7 @@ start_menu:
 
             struct User users[MAX_USERS];
             int userCount = loadUsers(users);
+            //printw("%d",userCount);
             int test_log = login(users, userCount);
 
             if (userCount > 0) {
@@ -434,7 +574,6 @@ start_menu:
                 goto main_menu;
 
                }else if(test_log == 2){
-                forgot_password_page(users, userCount);
                 goto start_menu;
 
                }
@@ -508,7 +647,7 @@ refresh();
     clear();
 
     delete_directory_contents(dirname);
-
+    srand(time(NULL));
 
     char mapafterreading[HEIGHT][WIDTH];
     char nameoftheplayer[100];
@@ -518,9 +657,6 @@ refresh();
         //printMap(mapafterreading);
         createFileAndPrintMap(mapafterreading,dirname,i);
     }
-    generateSingleRoomMap(mapafterreading);
-    createFileAndPrintMap(mapafterreading,dirname,5);
-    create_weapon_inventory(username);
     char ch = getch();
     choice = 2;
 
@@ -531,12 +667,7 @@ refresh();
             
     int health = 50, max_health = 50;
     int previous_health = 50;
-    int cheat_code = 0;
-    load_game_info(username, &lvl, &score, &gold_score);
 game: 
-if(lvl == 6){
-    goto end;
-}
 health = previous_health;
     char filename[200];
     sprintf(filename , "%s/saved%d_map.dat",username,lvl);
@@ -548,17 +679,20 @@ health = previous_health;
     sprintf(filename_weapone , "%s/weapon_inventory.txt",username);
 
 
-
+if(lvl ==5){
+//اینجا رو یک کاریش میکنم  :)))))
+}
 
     clear();
 
+    //=========================================
     int rows = 0, cols = 0;
     Point **mapafterreading = NULL;
     int x = 0, y = 0; 
     int spawn_x = 0, spawn_y = 0;
 
     int speed = 1; // سرعت اولیه
-    int damage = 1; // دمیج اولیه
+    int damage = 1; // آسیب اولیه
     char file_path[200];
     sprintf(file_path,"%s/map%d.txt",username,lvl );
     FILE *file = fopen(file_path, "r");
@@ -641,6 +775,8 @@ load_seen_points(mapafterreading, rows, cols, filename);
     char filename_weapone1[200];
     sprintf(filename_weapone1 , "%s/weapon_inventory.txt",username);
     load_weapon_inventory_from_file(&weapon_inventory, filename_weapone1);
+    save_weapon_inventory_to_file(&weapon_inventory, filename_weapone);
+
     file = fopen(filename_weapone1, "r");
     fseek(file, 0, SEEK_END);
     long file_size = ftell(file);
@@ -659,7 +795,7 @@ load_seen_points(mapafterreading, rows, cols, filename);
     // add_spell_to_inventory(&spell_inventory, HEAL, 1, NULL);
 
     //add_weapon_to_inventory(&weapon_inventory, MACE, 1, NULL);
-    // add_weapon_to_inventory(&weapon_inventory, DAGGER, 10, NULL);
+    // add_weapon_to_inventory(&weapon_inventory, DAGGER, 1, NULL);
     // add_weapon_to_inventory(&weapon_inventory, MAGIC_WAND, 1, NULL);
     // add_weapon_to_inventory(&weapon_inventory, ARROW, 1, NULL);
      //add_weapon_to_inventory(&weapon_inventory, SWORD, 1, NULL);
@@ -681,14 +817,15 @@ load_seen_points(mapafterreading, rows, cols, filename);
     int weapon_inventory_start_y = 20;
     int weapon_inventory_start_x = COLS - weapon_inventory_width;
     WINDOW *weapon_inventory_win = newwin(weapon_inventory_height, weapon_inventory_width, weapon_inventory_start_y, weapon_inventory_start_x);
-
+//===========================================================
     WINDOW *weapon_monster_win = newwin(10, 30, 40,weapon_inventory_start_x );  
     Player player = {x, y, health};
     Monster monsters[100]; 
-    int numMonsters ;
+    int numMonsters;
     findMonsters(weapon_monster_win, mapafterreading, monsters, &numMonsters, rows, cols);  
 
-    display_mapafterreading(mapafterreading, rows, cols, color,&cheat_code);
+//============================================================
+    display_mapafterreading(mapafterreading, rows, cols, color);
     display_health_bar(&player, max_health);
     display_gold_score(gold_score);
     display_food_inventoy(food_inventoy_win, &food_inventoy);
@@ -712,8 +849,9 @@ int attacker_num;
                 save_weapon_inventory_to_file(&weapon_inventory, filename_weapone);
                 previous_health = player.health;
                 saveMapToFile(mapafterreading, rows, cols, file_path);
-                goto game;
-
+                    if(lvl != 5){
+                    goto game;
+                    }
             }
                 break;
             case 's':
@@ -726,8 +864,9 @@ int attacker_num;
                 save_weapon_inventory_to_file(&weapon_inventory, filename_weapone);
                 previous_health = player.health;
                 saveMapToFile(mapafterreading, rows, cols, file_path);
-                goto game;
-
+                    if(lvl != 5){
+                    goto game;
+                    }
 
             }
                 break;
@@ -741,7 +880,9 @@ int attacker_num;
                     save_weapon_inventory_to_file(&weapon_inventory, filename_weapone);
                     previous_health = player.health;
                     saveMapToFile(mapafterreading, rows, cols, file_path);
+                    if(lvl != 5){
                     goto game;
+                    }
                 }
                 break;
             case 'd':
@@ -754,7 +895,9 @@ int attacker_num;
                     save_weapon_inventory_to_file(&weapon_inventory, filename_weapone);
                     previous_health = player.health;
                     saveMapToFile(mapafterreading, rows, cols, file_path);
+                    if(lvl != 5){
                     goto game;
+                    }
                 }
                 break;
             case 'q':
@@ -767,7 +910,9 @@ int attacker_num;
                     save_weapon_inventory_to_file(&weapon_inventory, filename_weapone);
                     previous_health = player.health;
                     saveMapToFile(mapafterreading, rows, cols, file_path);
+                    if(lvl != 5){
                     goto game;
+                    }
                 }
                 break;
             case 'e':
@@ -780,7 +925,9 @@ int attacker_num;
                     save_weapon_inventory_to_file(&weapon_inventory, filename_weapone);
                     previous_health = player.health;
                     saveMapToFile(mapafterreading, rows, cols, file_path);
+                    if(lvl != 5){
                     goto game;
+                    }
                 }
                 break;
             case 'z':
@@ -793,7 +940,9 @@ int attacker_num;
                     save_weapon_inventory_to_file(&weapon_inventory, filename_weapone);
                     previous_health = player.health;
                     saveMapToFile(mapafterreading, rows, cols, file_path);
+                    if(lvl != 5){
                     goto game;
+                    }
                 }
                 break;
             case 'c':
@@ -806,28 +955,11 @@ int attacker_num;
                     save_weapon_inventory_to_file(&weapon_inventory, filename_weapone);
                     previous_health = player.health;
                     saveMapToFile(mapafterreading, rows, cols, file_path);
+                    if(lvl != 5){
                     goto game;
+                    }
                 }
                 break;
-
-
-int fisrt_cheat = 0;
-
-            case 'm':
-            if(fisrt_cheat == 0){
-                cheat_code = 1;
-                fisrt_cheat++;
-            }else{
-                cheat_code = 0;
-                fisrt_cheat--;
-            }
-                clear();
-                refresh();
-                display_mapafterreading(mapafterreading, rows, cols, color,&cheat_code);
-            
-            
-            
-            break;
             case 'i':
                 consume_food(&food_inventoy, &player, max_health, &time_without_food, food_inventoy_win);
                 werase(food_inventoy_win);
@@ -878,7 +1010,6 @@ int fisrt_cheat = 0;
         use_weapone(&player, &monsters[attacker_num], &weapon_inventory, weapon_inventory_win,mapafterreading,&damage); 
         if (!monsters[attacker_num].alive) {
             gameState = EXPLORE; 
-            score++;
         } else {
             if(speed == 2) {
                 currentTurn = PLAYER_TURN;
@@ -908,7 +1039,7 @@ int fisrt_cheat = 0;
 
 
         if (player.health > 0) {
-            display_mapafterreading(mapafterreading, rows, cols, color,&cheat_code);
+            display_mapafterreading(mapafterreading, rows, cols, color);
             display_health_bar(&player, max_health);
             display_gold_score(gold_score);
             display_food_inventoy(food_inventoy_win, &food_inventoy);
@@ -917,14 +1048,12 @@ int fisrt_cheat = 0;
             decrease_health_over_time(&player, &time_without_food); 
             display_hunger(time_without_food / 6);
         } else {
-            delete_directory_contents(dirname);
             display_game_over();
             char command = getch();
             if (command) {
                 goto end;
             }
         }
-
 
     }
     camefromgame++;
@@ -937,7 +1066,6 @@ int fisrt_cheat = 0;
     
     saveMapToFileForSave(mapafterreading, rows, cols, file_path,spawn_cehck_x,spawn_check_y);
     save_seen_points(mapafterreading, rows, cols, filename);
-    save_game_info(username, lvl, score, gold_score);
     clear();
 goto setting;
 
@@ -948,7 +1076,6 @@ goto setting;
     
 
 end:
-    update_score(username, score + gold_score);
     clear();
     for (int i = 0; i < rows; i++) {
         free(mapafterreading[i]);
@@ -1019,11 +1146,11 @@ setting:
     keypad(stdscr, TRUE);
 
 
-    settings_menu(&music_on, &selected_music ,&color,&selected_difficulty);
+    settings_menu(&music_on, &selected_music ,&color);
     }
     if(camefromgame >= 1){
-        camefromgame = 0;
         goto game;
+        camefromgame = 0;
     }else{
         goto main_menu;
     }
@@ -1045,30 +1172,23 @@ setting:
 }
 
 
-void monsterspawn(char mapafterreading[HEIGHT][WIDTH], Room *room,int *selected_difficulty) {
-    int MonsterSpawned = 0;
-    int difficulty = *selected_difficulty * 50;
+void monsterspawn(char mapafterreading[HEIGHT][WIDTH], Room *room) {
     for (int y = room->y; y < room->y + room->height; y++) {
         for (int x = room->x; x < room->x + room->width; x++) {
-            if (MonsterSpawned <= 8 && rand() % 50 == 0 && mapafterreading[y][x+1] != '+' && mapafterreading[y+1][x] != '+' && mapafterreading[y-1][x] != '+' && mapafterreading[y][x-1] != '+' && mapafterreading[y][x] != '>'  && mapafterreading[y][x] != '|' && mapafterreading[y][x] != '-') { 
+            if (rand() % 50 == 0 && mapafterreading[y][x+1] != '+' && mapafterreading[y+1][x] != '+' && mapafterreading[y-1][x] != '+' && mapafterreading[y][x-1] != '+' && mapafterreading[y][x] != '>') { 
             mapafterreading[y][x] = 'D'; 
-            MonsterSpawned++;
             }
-            else if(MonsterSpawned <= 8 && rand() % (150-difficulty) == 0 && mapafterreading[y][x+1] != '+' && mapafterreading[y+1][x] != '+' && mapafterreading[y-1][x] != '+' && mapafterreading[y][x-1] != '+' && mapafterreading[y][x] != '>'&& mapafterreading[y][x] != '|' && mapafterreading[y][x] != '-'){
+            else if(rand() % 150 == 0 && mapafterreading[y][x+1] != '+' && mapafterreading[y+1][x] != '+' && mapafterreading[y-1][x] != '+' && mapafterreading[y][x-1] != '+' && mapafterreading[y][x] != '>'){
             mapafterreading[y][x] = 'F'; 
-            MonsterSpawned++;
             }
-            else if(MonsterSpawned <= 8 && rand() % (200 - difficulty)== 0 && mapafterreading[y][x+1] != '+' && mapafterreading[y+1][x] != '+' && mapafterreading[y-1][x] != '+' && mapafterreading[y][x-1] != '+' && mapafterreading[y][x] != '>'&& mapafterreading[y][x] != '|' && mapafterreading[y][x] != '-'){
+            else if(rand() % 200== 0 && mapafterreading[y][x+1] != '+' && mapafterreading[y+1][x] != '+' && mapafterreading[y-1][x] != '+' && mapafterreading[y][x-1] != '+' && mapafterreading[y][x] != '>'){
             mapafterreading[y][x] = 'G'; 
-            MonsterSpawned++;
             }
-            else if(MonsterSpawned <= 8 && rand() % (250 - difficulty) == 0 && mapafterreading[y][x+1] != '+' && mapafterreading[y+1][x] != '+' && mapafterreading[y-1][x] != '+' && mapafterreading[y][x-1] != '+' && mapafterreading[y][x] != '>'&& mapafterreading[y][x] != '|' && mapafterreading[y][x] != '-'){
-            mapafterreading[y][x] = 'S';
-            MonsterSpawned++; 
+            else if(rand() % 250 == 0 && mapafterreading[y][x+1] != '+' && mapafterreading[y+1][x] != '+' && mapafterreading[y-1][x] != '+' && mapafterreading[y][x-1] != '+' && mapafterreading[y][x] != '>'){
+            mapafterreading[y][x] = 'S'; 
             }
-            else if(MonsterSpawned <= 8 && rand() % (300 - difficulty) == 0 && mapafterreading[y][x+1] != '+' && mapafterreading[y+1][x] != '+' && mapafterreading[y-1][x] != '+' && mapafterreading[y][x-1] != '+' && mapafterreading[y][x] != '>'&& mapafterreading[y][x] != '|' && mapafterreading[y][x] != '-'){
+            else if(rand() % 500 == 0 && mapafterreading[y][x+1] != '+' && mapafterreading[y+1][x] != '+' && mapafterreading[y-1][x] != '+' && mapafterreading[y][x-1] != '+' && mapafterreading[y][x] != '>'){
             mapafterreading[y][x] = 'U'; 
-            MonsterSpawned++;
             }
         }
     }
@@ -1198,8 +1318,6 @@ void signup(char *filename)
     char password[MAX_PASSWORD_LENGTH];
     char email[MAX_EMAIL_LENGTH];
     score = 0;
-    games_played = 0;
-
         draw_border();
         mvprintw(LINES / 2  , COLS / 2.5, "what's you'r name adventeaur: ");
         echo();
@@ -1222,12 +1340,7 @@ void signup(char *filename)
     while(1){
     clear();
     draw_border();
-        int passwordLength = 8; 
-    char *password = generate_random_password(passwordLength);
-    mvprintw(LINES / 2  - 3  , COLS / 2.5, "Randomly generated pass: %s",password);
-
     mvprintw(LINES / 2  , COLS / 2.5, "we should have a secret word do you have any idea?...");
-
         echo();
         scanw("%s",password);
         noecho();
@@ -1268,7 +1381,7 @@ void signup(char *filename)
         return;
     }
 
-    fprintf(file, "%s %s %s %d %d\n", username, password, email, score, games_played);
+    fprintf(file, "%s %s %s %d\n", username, password, email, score);
     clear();
     draw_border();
     
@@ -1384,7 +1497,7 @@ void generateMap(char mapafterreading[HEIGHT][WIDTH]) {
         for (int i = 0; i < ROOMS; i++) {
             decorateRoom(mapafterreading, &rooms[i]);
             goldspawn(mapafterreading, &rooms[i]);
-            monsterspawn(mapafterreading, &rooms[i],&selected_difficulty);
+            monsterspawn(mapafterreading, &rooms[i]);
         }
         for (int i = 0; i < ROOMS; i++) {
             traproom(mapafterreading, &rooms[i]);
@@ -1440,26 +1553,9 @@ void decorateRoom(char mapafterreading[HEIGHT][WIDTH], Room *room) {
 
     for (int y = room->y; y < room->y + room->height; y++) {
         for (int x = room->x; x < room->x + room->width; x++) {
-            if (rand() % 5 == 0 && mapafterreading[y][x+1] != '+' && mapafterreading[y+1][x] != '+' && mapafterreading[y-1][x] != '+' && mapafterreading[y][x-1] != '+' && mapafterreading[y][x] != '>' && mapafterreading[y][x] != 'P') { 
+            if (rand() % 10 == 0 && mapafterreading[y][x+1] != '+' && mapafterreading[y+1][x] != '+' && mapafterreading[y-1][x] != '+' && mapafterreading[y][x-1] != '+' && mapafterreading[y][x] != '>') { 
                     mapafterreading[y][x] = 'O'; 
-                    if(rand() % 10 == 0){
-                    mapafterreading[y][x] = 'f';  
-                    } 
-                    if(rand() % 15 == 0){
-                    mapafterreading[y][x] = 'h';  
-                    } 
-                    if(rand() % 20 == 0){
-                    mapafterreading[y][x] = 'm';  
-                    }
-                    if(rand() % 25 == 0){
-                    mapafterreading[y][x] = 's';  
-                    }
-                    if(rand() % 30 == 0){
-                    mapafterreading[y][x] = 'p';  
-                    }
-                    if(rand() % 35 == 0){
-                    mapafterreading[y][x] = 'd';  
-                    }
+                
             }
         }
     }
@@ -1472,28 +1568,12 @@ void goldspawn(char mapafterreading[HEIGHT][WIDTH], Room *room) {
 
     for (int y = room->y; y < room->y + room->height; y++) {
         for (int x = room->x; x < room->x + room->width; x++) {
-            if (rand() % 10 == 0 && mapafterreading[y][x+1] != '+' && mapafterreading[y+1][x] != '+' && mapafterreading[y-1][x] != '+' && mapafterreading[y][x-1] != '+' && mapafterreading[y][x] != '|' && mapafterreading[y][x] != '-' && mapafterreading[y][x] != 'P'&& mapafterreading[y][x] != '>') { 
-                    mapafterreading[y][x] = 'c';
-                    if(rand() % 15 == 0){
-                    mapafterreading[y][x] = 'b';  
-                    } 
-                    if(rand() % 20 == 0){
-                    mapafterreading[y][x] = 'I';  
-                    }
-                    if(rand() % 25 == 0){
-                    mapafterreading[y][x] = 'd';  
-                    }
-                    if(rand() % 50 == 0){
-                    mapafterreading[y][x] = 'i';  
-                    }
-                    if(rand() % 100 == 0){
-                    mapafterreading[y][x] = 'C';
-                    }
+            if (rand() % 10 == 0 && mapafterreading[y][x+1] != '+' && mapafterreading[y+1][x] != '+' && mapafterreading[y-1][x] != '+' && mapafterreading[y][x-1] != '+' && mapafterreading[y][x] != '>') { 
+                    mapafterreading[y][x] = 'c'; 
                 
             }
         }
     }
-    
 }
 
 void generateRoom(char mapafterreading[HEIGHT][WIDTH], Room *rooms, int roomIndex) {
@@ -1658,36 +1738,37 @@ void display_weapon_inventory(WINDOW *win, weapon_inventory *inventory) {
     box(win, 0, 0);
     if (inventory->itemCount > 0) {
         curs_set(FALSE);
-        mvwprintw(win, 1, 1, "Weapon Inventory:      ");
+        mvwprintw(win, 1, 1, "Weapon Inventory:");
         int line = 2;
         for (int i = 0; i < inventory->itemCount; i++) {
+            if (inventory->items[i].quantity > 0) {
                 switch (inventory->items[i].type) {
                     case MACE:
                         box(win, 0, 0);
                         mvwprintw(win, 1, 1, "Weapon Inventory:");
-                        mvwprintw(win, line++, 1, "Mace x%d ", inventory->items[i].quantity);
+                        mvwprintw(win, line++, 1, "Mace x%d  ", inventory->items[i].quantity);
                         break;
                     case DAGGER:
                         box(win, 0, 0);
                         mvwprintw(win, 1, 1, "Weapon Inventory:");
-                        mvwprintw(win, line++, 1, "Dagger x%d ", inventory->items[i].quantity);
+                        mvwprintw(win, line++, 1, "Dagger x%d  ", inventory->items[i].quantity);
                         break;
                     case MAGIC_WAND:
                         box(win, 0, 0);
                         mvwprintw(win, 1, 1, "Weapon Inventory:");
-                        mvwprintw(win, line++, 1, "Magic Wand x%d ", inventory->items[i].quantity);
+                        mvwprintw(win, line++, 1, "Magic Wand x%d  ", inventory->items[i].quantity);
                         break;
                     case ARROW:
                         box(win, 0, 0);
                         mvwprintw(win, 1, 1, "Weapon Inventory:");
-                        mvwprintw(win, line++, 1, "Arrow x%d ", inventory->items[i].quantity);
+                        mvwprintw(win, line++, 1, "Arrow x%d   ", inventory->items[i].quantity);
                         break;
                     case SWORD:
                         box(win, 0, 0);
                         mvwprintw(win, 1, 1, "Weapon Inventory:");
-                        mvwprintw(win, line++, 1, "Sword x%d ", inventory->items[i].quantity);
+                        mvwprintw(win, line++, 1, "Sword x%d   ", inventory->items[i].quantity);
                         break;
-                
+                }
             }
         }
         if (line == 2) {
@@ -1703,9 +1784,20 @@ void display_weapon_inventory(WINDOW *win, weapon_inventory *inventory) {
     wrefresh(win);
 }
 
+void add_weapon_to_inventory(weapon_inventory *inventory, WeaponType type, int quantity, WINDOW *win) {
+    if (inventory->itemCount < 5) {
+        inventory->items[inventory->itemCount].type = type;
+        inventory->items[inventory->itemCount].quantity = quantity;
+        inventory->itemCount++;
+    }
+    werase(win);
+    display_weapon_inventory(win, inventory);
+}
+
 int select_weapon_item(WINDOW *win, weapon_inventory *inventory) {
     int choice = 0;
     int c;
+    
     
     keypad(win, TRUE);
     while (1) {
@@ -1716,38 +1808,31 @@ int select_weapon_item(WINDOW *win, weapon_inventory *inventory) {
             if (i == choice) {
                 wattron(win, A_REVERSE);
             }
-            mvwprintw(win, 2 + i, 1, "%s x%d %s",
+            mvwprintw(win, 2 + i, 1, "%s x%d",
                       inventory->items[i].type == MACE ? "Mace" :
                       inventory->items[i].type == DAGGER ? "Dagger" :
                       inventory->items[i].type == MAGIC_WAND ? "Magic Wand" :
                       inventory->items[i].type == ARROW ? "Arrow" :
                       "Sword",
-                      inventory->items[i].quantity,
-                      inventory->items[i].quantity == 0 ? "" : "");//age khasti chizi benvisi bara aslahe haii ke nadri too avali benvis
+                      inventory->items[i].quantity);
             wattroff(win, A_REVERSE);
         }
         wrefresh(win);
         
         c = wgetch(win);
         switch (c) {
-            case 'w':
-                do {
-                    choice = (choice == 0) ? inventory->itemCount - 1 : choice - 1;
-                } while (inventory->items[choice].quantity == 0);
+            case KEY_UP:
+                choice = (choice == 0) ? inventory->itemCount - 1 : choice - 1;
                 break;
-            case 's':
-                do {
-                    choice = (choice == inventory->itemCount - 1) ? 0 : choice + 1;
-                } while (inventory->items[choice].quantity == 0);
+            case KEY_DOWN:
+                choice = (choice == inventory->itemCount - 1) ? 0 : choice + 1;
                 break;
             case ' ': 
-                if (inventory->items[choice].quantity > 0) {
-                    return choice;
-                }
-                break;
+                return choice;
         }
     }
 }
+
 
 void display_spell_inventory(WINDOW *win, spell_inventory *inventory) {
     box(win, 0, 0);
@@ -1930,59 +2015,16 @@ void display_food_inventoy(WINDOW *food_inventoy_win, food_inventoy *food_invent
     wrefresh(food_inventoy_win);
 }
 
-char* generate_random_password(int length) {
-    if (length < 3) {
-        length = 3;
-    }
-    
-    char* password = malloc(length + 1);
-    if (!password) {
-        return NULL; 
-    }
-
-    const char *upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    const char *lower = "abcdefghijklmnopqrstuvwxyz";
-    const char *digits = "0123456789";
-    const char *allChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-
-    password[0] = upper[rand() % strlen(upper)];
-    password[1] = lower[rand() % strlen(lower)];
-    password[2] = digits[rand() % strlen(digits)];
-
-    for (int i = 3; i < length; i++) {
-        password[i] = allChars[rand() % strlen(allChars)];
-    }
-
-    for (int i = 0; i < length; i++) {
-        int j = rand() % length;
-        char temp = password[i];
-        password[i] = password[j];
-        password[j] = temp;
-    }
-    
-    password[length] = '\0';  
-    return password;
-}
-
 void add_food_to_food_inventoy(food_inventoy *food_inventoy, FoodType type, int quantity, WINDOW *food_inventoy_win) {
-    bool exists = false;
-    for (int i = 0; i < food_inventoy->itemCount; i++) {
-        if (food_inventoy->items[i].type == type) {
-            food_inventoy->items[i].quantity += quantity; 
-            exists = true;
-            break;
-        }
-    }
-
-    if (!exists && food_inventoy->itemCount < 5) {
+    if (food_inventoy->itemCount < 5) {
         food_inventoy->items[food_inventoy->itemCount].type = type;
         food_inventoy->items[food_inventoy->itemCount].quantity = quantity;
         food_inventoy->itemCount++;
     }
-
     werase(food_inventoy_win);
     display_food_inventoy(food_inventoy_win, food_inventoy);
 }
+
 
 void decrease_health_over_time(Player *player, int *time_without_food) {
     if (*time_without_food > 60 && *time_without_food %10 ==0) { 
@@ -1992,7 +2034,7 @@ void decrease_health_over_time(Player *player, int *time_without_food) {
     }
 }
 
-void display_mapafterreading(Point **mapafterreading, int rows, int cols, int color, int *cheat_code) {
+void display_mapafterreading(Point **mapafterreading, int rows, int cols, int color) {
     clear(); 
     start_color(); 
     init_color(20, 1000, 843, 0);
@@ -2013,16 +2055,12 @@ void display_mapafterreading(Point **mapafterreading, int rows, int cols, int co
     init_pair(28, 28, COLOR_BLACK);
     init_color(29, 1000, 0, 1000);
     init_pair(29, 29, COLOR_BLACK);
-    init_color(26, 700, 1000, 1000); 
-    init_pair(26, 26, COLOR_BLACK); 
-    init_color(30, 500, 500, 500);  
-    init_pair(30, 30, COLOR_BLACK);
 
     int wallcolor = 24;
 
     for (int i = 0; i < rows; i++) {
         for (int j = 0; j < cols; j++) {
-            if (mapafterreading[i][j].seen || *cheat_code == 1) {
+            if (mapafterreading[i][j].seen) {
                 if(mapafterreading[i][j].symbol == 'c') {
                     attron(COLOR_PAIR(20)); 
                     mvprintw(i, j, "%c", mapafterreading[i][j].symbol);
@@ -2105,10 +2143,6 @@ void display_mapafterreading(Point **mapafterreading, int rows, int cols, int co
                     attron(COLOR_PAIR(29));
                     mvprintw(i, j, "G");
                     attroff(COLOR_PAIR(29));
-                }else if(mapafterreading[i][j].symbol == 'C'){
-                    attron(COLOR_PAIR(30));
-                    mvprintw(i, j, "C");
-                    attroff(COLOR_PAIR(30));
                 }
                 else {
                     mvprintw(i, j, "%c", mapafterreading[i][j].symbol);
@@ -2118,6 +2152,7 @@ void display_mapafterreading(Point **mapafterreading, int rows, int cols, int co
     }
     refresh();
 }
+
 
 void reveal_points(Point **mapafterreading, int char_x, int char_y, int rows, int cols, int range) {
     for (int i = 0; i < rows; i++) {
@@ -2131,8 +2166,6 @@ void reveal_points(Point **mapafterreading, int char_x, int char_y, int rows, in
 }
 
 void display_game_over() {
-    clear();
-    refresh();
     start_color(); 
     init_pair(10, COLOR_RED, COLOR_BLACK); 
 
@@ -2198,6 +2231,7 @@ void display_gold_score(int gold_score) {
     mvprintw(50, 70, "Gold Score: %d", gold_score);
     refresh();
 }
+
 
 void display_hunger(int hunger) {
         init_color(48, 1000, 500, 0);
@@ -2307,62 +2341,24 @@ void save_weapon_inventory_to_file(weapon_inventory *inventory, const char *file
         return;
     }
 
-    for (int i = MACE; i <= SWORD; i++) {
-        int quantity = 0;
-        for (int j = 0; j < inventory->itemCount; j++) {
-            if (inventory->items[j].type == i) {
-                quantity = inventory->items[j].quantity;
-                break;
-            }
-        }
-        if (i == MACE && quantity == 0) {
-            quantity = 1;
-        }
-        fprintf(file, "Type: %d, Quantity: %d\n", i, quantity);
+    for (int i = 0; i < inventory->itemCount; i++) {
+        fprintf(file, "Type: %d, Quantity: %d\n", inventory->items[i].type, inventory->items[i].quantity);
     }
 
     fclose(file);
 }
 
-void add_weapon_to_inventory(weapon_inventory *inventory, WeaponType type, int quantity, WINDOW *win) {
-    for (int i = 0; i < inventory->itemCount; i++) {
-        if (inventory->items[i].type == type) {
-            inventory->items[i].quantity += quantity;
-            werase(win);
-            display_weapon_inventory(win, inventory);
-            return;
-        }
-    }
+void add_spell_to_inventory(spell_inventory *inventory, SpellType type, int quantity, WINDOW *win) {
     if (inventory->itemCount < 5) {
         inventory->items[inventory->itemCount].type = type;
         inventory->items[inventory->itemCount].quantity = quantity;
         inventory->itemCount++;
     }
     werase(win);
-    display_weapon_inventory(win, inventory);
-}
-
-void add_spell_to_inventory(spell_inventory *inventory, SpellType type, int quantity, WINDOW *win) {
-
-    bool exists = false;
-    for (int i = 0; i < inventory->itemCount; i++) {
-        if (inventory->items[i].type == type) {
-            inventory->items[i].quantity += quantity;
-            exists = true;
-            break;
-        }
-    }
-
-    if (!exists && inventory->itemCount < 5) {
-        inventory->items[inventory->itemCount].type = type;
-        inventory->items[inventory->itemCount].quantity = quantity;
-        inventory->itemCount++;
-    }
-
-    werase(win);
     display_spell_inventory(win, inventory);
 }
 
+//====================================
 char createMessageWindow(const char *message) {
     int height = 5;
     int width = 40; 
@@ -2400,6 +2396,7 @@ int check_for_combat(Player *player, Monster monsters[], int numMonsters) {
         }
     }
 }
+
 
 void findMonsters(WINDOW *win, Point **mapafterreading, Monster monsters[], int *numMonsters, int rows, int cols) {
     *numMonsters = 0;
@@ -2563,7 +2560,7 @@ void shootWeaponWithDirection(WINDOW *win,weapon_inventory *inventory,Monster mo
     int y = startY;
     while (1) {
         char symbol = mapafterreading[x][y].symbol;
-        if (symbol == '|' || symbol == '-' ||symbol == 'O' ) {
+        if (symbol == '|' || symbol == '-' || symbol == '+' || symbol == '#') {
             break;
         }
         for (int i = 0; i < numMonsters; i++) {
@@ -2586,20 +2583,14 @@ void shootWeaponWithDirection(WINDOW *win,weapon_inventory *inventory,Monster mo
     }
 }
 
+
 void move_character(int *lvl,Point **mapafterreading, int *x, int *y, int new_x, int new_y, int rows, int cols, int spawn_x, int spawn_y, int *health, int *gold_score, food_inventoy *food_inventoy, WINDOW *food_inventoy_win, spell_inventory *spell_inventory, WINDOW *spell_inventory_win, weapon_inventory *weapon_inventory, WINDOW *weapon_inventory_win) {
     static char previous_symbol = '>';
 
     if (new_x >= 0 && new_x < rows && new_y >= 0 && new_y < cols && mapafterreading[new_x][new_y].symbol != '|' && mapafterreading[new_x][new_y].symbol != '-' && mapafterreading[new_x][new_y].symbol != 'O' && mapafterreading[new_x][new_y].symbol != ' ') {
         mapafterreading[*x][*y].symbol = (*x == spawn_x && *y == spawn_y) ? '>' : previous_symbol;
 
-        previous_symbol = 
-         (mapafterreading[new_x][new_y].symbol == 'b'||mapafterreading[new_x][new_y].symbol == 'd'||mapafterreading[new_x][new_y].symbol == '/'
-        ||mapafterreading[new_x][new_y].symbol == 'F' || mapafterreading[new_x][new_y].symbol == '.' || mapafterreading[new_x][new_y].symbol == 'P' 
-        || mapafterreading[new_x][new_y].symbol == 'c' || mapafterreading[new_x][new_y].symbol == 'C' || mapafterreading[new_x][new_y].symbol == 'f' 
-        || mapafterreading[new_x][new_y].symbol == 's'  || mapafterreading[new_x][new_y].symbol == 'I' || mapafterreading[new_x][new_y].symbol == 'h'
-        || mapafterreading[new_x][new_y].symbol == 'm'|| mapafterreading[new_x][new_y].symbol == 'p'|| mapafterreading[new_x][new_y].symbol == 'i'
-        || mapafterreading[new_x][new_y].symbol == 'k'
-        ) ? '.' : mapafterreading[new_x][new_y].symbol;
+        previous_symbol = (mapafterreading[new_x][new_y].symbol == '/'||mapafterreading[new_x][new_y].symbol == 'F' || mapafterreading[new_x][new_y].symbol == '.' || mapafterreading[new_x][new_y].symbol == 'P' || mapafterreading[new_x][new_y].symbol == 'c' || mapafterreading[new_x][new_y].symbol == 'C' || mapafterreading[new_x][new_y].symbol == 'f' || mapafterreading[new_x][new_y].symbol == 's'  || mapafterreading[new_x][new_y].symbol == 'I' ) ? '.' : mapafterreading[new_x][new_y].symbol;
 
         if (mapafterreading[new_x][new_y].trap) {
             (*health)--;
@@ -2607,13 +2598,9 @@ void move_character(int *lvl,Point **mapafterreading, int *x, int *y, int new_x,
             mapafterreading[new_x][new_y].trap = false;
         }
 
-        if (mapafterreading[new_x][new_y].symbol == 'c') {//gold
+        if (mapafterreading[new_x][new_y].symbol == 'c') {//gol
             (*gold_score)++;
         }
-        else if (mapafterreading[new_x][new_y].symbol == 'C') {//black gold
-            *gold_score += 10;
-        }
-        //talaha ||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
         
         if (mapafterreading[new_x][new_y].symbol == 'f') {//normal food
             refresh();
@@ -2623,24 +2610,8 @@ void move_character(int *lvl,Point **mapafterreading, int *x, int *y, int new_x,
                 add_food_to_food_inventoy(food_inventoy, NORMAL, 1, food_inventoy_win);
             }
         }
-        else if (mapafterreading[new_x][new_y].symbol == 'm') {//magid food
-            refresh();
-            
-            int ch = createMessageWindow("press space to pick up item");
-            if (ch == ' ') {
-                add_food_to_food_inventoy(food_inventoy, MAGIC, 1, food_inventoy_win);
-            }
-        }         
-        else if (mapafterreading[new_x][new_y].symbol == 'p') {//premium food
-            refresh();
-            
-            int ch = createMessageWindow("press space to pick up item");
-            if (ch == ' ') {
-                add_food_to_food_inventoy(food_inventoy, PREMIUM, 1, food_inventoy_win);
-            }
-        }       
-        //ghzaha|||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-        else if (mapafterreading[new_x][new_y].symbol == 's' ) {//spell speed
+
+        if (mapafterreading[new_x][new_y].symbol == 's' ) {//spell speed
             refresh();
             int ch = createMessageWindow("press space to pick up item");
             if (ch == ' ') {
@@ -2648,61 +2619,25 @@ void move_character(int *lvl,Point **mapafterreading, int *x, int *y, int new_x,
                 refresh();
             }
         }
-        else if (mapafterreading[new_x][new_y].symbol == 'd' ) {//spell damage
-            refresh();
-            int ch = createMessageWindow("press space to pick up item");
-            if (ch == ' ') {
-                add_spell_to_inventory(spell_inventory, DAGGER, 1, spell_inventory_win);
-                refresh();
-            }
-        }
-        else if (mapafterreading[new_x][new_y].symbol == 'h' ) {//spell heal
-            refresh();
-            int ch = createMessageWindow("press space to pick up item");
-            if (ch == ' ') {
-                add_spell_to_inventory(spell_inventory, HEAL, 1, spell_inventory_win);
-                refresh();
-            }
-        }
-        //spelllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllllll
-        else if (mapafterreading[new_x][new_y].symbol == '/') {//dead body
+
+        if (mapafterreading[new_x][new_y].symbol == '/') {//dead body
             refresh();
             int ch = createMessageWindow("press space to loot the remains");
             if (ch == ' ') {
+                int chance = rand();
                 add_food_to_food_inventoy(food_inventoy, NORMAL, 1, food_inventoy_win);
+                if(chance % 10 == 0){
+                 add_weapon_to_inventory(weapon_inventory, SWORD, 1, weapon_inventory_win);   
+                }
             }
             mapafterreading[new_x][new_y].symbol = '.';
         }
-        //weaponessssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss
-        else if (mapafterreading[new_x][new_y].symbol == 'I' ) {//sword
+        
+        if (mapafterreading[new_x][new_y].symbol == 'I' ) {//sword
             refresh();
             int ch = createMessageWindow("press space to pick up item");
             if (ch == ' ') {
                 add_weapon_to_inventory(weapon_inventory, SWORD, 1, weapon_inventory_win);
-                refresh();
-            }
-        }
-        else if (mapafterreading[new_x][new_y].symbol == 'i' ) {//magic wand
-            refresh();
-            int ch = createMessageWindow("press space to pick up item");
-            if (ch == ' ') {
-                add_weapon_to_inventory(weapon_inventory, MAGIC_WAND, 6, weapon_inventory_win);
-                refresh();
-            }
-        }
-        else if (mapafterreading[new_x][new_y].symbol == 'k' ) {//dagger
-            refresh();
-            int ch = createMessageWindow("press space to pick up item");
-            if (ch == ' ') {
-                add_weapon_to_inventory(weapon_inventory, DAGGER, 3, weapon_inventory_win);
-                refresh();
-            }
-        }
-        else if (mapafterreading[new_x][new_y].symbol == 'b' ) {//bow
-            refresh();
-            int ch = createMessageWindow("press space to pick up item");
-            if (ch == ' ') {
-                add_weapon_to_inventory(weapon_inventory, ARROW, 2, weapon_inventory_win);
                 refresh();
             }
         }
@@ -2722,9 +2657,6 @@ void move_character(int *lvl,Point **mapafterreading, int *x, int *y, int new_x,
                 }
 
             }
-        }
-        if(mapafterreading[new_x][new_y].symbol == 'A'){
-            (*lvl)++;
         }
 
 
@@ -2758,7 +2690,7 @@ void displayScoreboard(WINDOW *win,struct User players[], int count, int start, 
     for (int i = start; i < count && i < start + getmaxy(win) - 3; i++) { 
         if (strcmp(players[i].username, username) == 0 && usernameRank > 3) {
             wattron(win, A_BOLD | COLOR_PAIR(4));
-            mvwprintw(win, i - start + 1, 2, "%d. %s - %d exp: %d", i + 1, players[i].username, players[i].score, players[i].gamesplayed);
+            mvwprintw(win, i - start + 1, 2, "%d. %s - %d", i + 1, players[i].username, players[i].score);
             wattroff(win, A_BOLD | COLOR_PAIR(4)); 
         } 
         
@@ -2767,7 +2699,7 @@ void displayScoreboard(WINDOW *win,struct User players[], int count, int start, 
             if(usernameRank-1 == i){
                 wattron(win, A_BOLD);
             }
-            mvwprintw(win, i - start + 1, 2, "%d. The Unbreakable Diamond: %s - %d🥇 exp: %d", i + 1, players[i].username, players[i].score, players[i].gamesplayed);
+            mvwprintw(win, i - start + 1, 2, "%d. The Unbreakable Diamond: %s - %d🥇", i + 1, players[i].username, players[i].score);
             wattroff(win, A_BOLD);
             wattroff(win, COLOR_PAIR(1)); 
         } else if (i == 1) {
@@ -2775,7 +2707,7 @@ void displayScoreboard(WINDOW *win,struct User players[], int count, int start, 
             if(usernameRank-1 == i){
                 wattron(win, A_BOLD);
             } 
-            mvwprintw(win, i - start + 1, 2, "%d. Golden Knight: %s - %d🥈 exp: %d", i + 1, players[i].username, players[i].score, players[i].gamesplayed);
+            mvwprintw(win, i - start + 1, 2, "%d. Golden Knight: %s - %d🥈", i + 1, players[i].username, players[i].score);
             wattroff(win, A_BOLD);
             wattroff(win, COLOR_PAIR(2)); 
         } else if (i == 2) {
@@ -2783,11 +2715,11 @@ void displayScoreboard(WINDOW *win,struct User players[], int count, int start, 
             if(usernameRank-1 == i){
                 wattron(win, A_BOLD);
             } 
-            mvwprintw(win, i - start + 1, 2, "%d. Bronze Warrior: %s - %d🥉 exp: %d", i + 1, players[i].username, players[i].score, players[i].gamesplayed);
+            mvwprintw(win, i - start + 1, 2, "%d. Bronze Warrior: %s - %d🥉", i + 1, players[i].username, players[i].score);
             wattroff(win, A_BOLD);
             wattroff(win, COLOR_PAIR(3));
         } else {
-            mvwprintw(win, i - start + 1, 2, "%d. %s - %d exp: %d", i + 1, players[i].username, players[i].score, players[i].gamesplayed);
+            mvwprintw(win, i - start + 1, 2, "%d. %s - %d", i + 1, players[i].username, players[i].score);
         }
         displayed = i;
     }
@@ -2814,11 +2746,9 @@ int readPlayersFromFile(const char *filename,struct User players[]) {
     while (fgets(line, sizeof(line), file) && count < MAX_USERS) {
         char name[20], password[20], email[50];
         int score;
-        int gamesplayed;
-        if (sscanf(line, "%s %s %s %d %d", name, password, email, &score ,&gamesplayed) == 5) {
+        if (sscanf(line, "%s %s %s %d", name, password, email, &score) == 4) {
             strcpy(players[count].username, name);
             players[count].score = score;
-            players[count].gamesplayed = gamesplayed;
             count++;
         }
     }
@@ -2872,299 +2802,5 @@ void saveMapToFileForSave(Point **map, int rows, int cols, const char *filename,
     fputc('P', file);  
 
     fclose(file);  
-}
-
-void generateSingleRoomMap(char mapafterreading[HEIGHT][WIDTH]) {
-
-    for (int i = 0; i < HEIGHT; i++) {
-        for (int j = 0; j < WIDTH; j++) {
-            mapafterreading[i][j] = ' ';
-        }
-    }
-
-
-    int roomX = WIDTH / 8;
-    int roomY = HEIGHT / 8;
-    int roomWidth = WIDTH / 4;
-    int roomHeight = HEIGHT / 4;
-
-
-    for (int i = roomY; i < roomY + roomHeight; i++) {
-        for (int j = roomX; j < roomX + roomWidth; j++) {
-            if (i == roomY || i == roomY + roomHeight - 1) {
-                mapafterreading[i][j] = '-'; 
-            } else if (j == roomX || j == roomX + roomWidth - 1) {
-                mapafterreading[i][j] = '|'; 
-            } else {
-                mapafterreading[i][j] = '.'; 
-            }
-        }
-    }
-
-
-    int centerX = roomX + roomWidth / 2;
-    int centerY = roomY + roomHeight / 2;
-    
-    mapafterreading[roomY + 2][roomX + roomWidth / 2] = 'A'; // بالا
-    mapafterreading[roomY + roomHeight - 3][roomX + roomWidth / 2] = 'A'; // پایین
-
-
-
-    Room room = {roomX, roomY, roomWidth, roomHeight};
-    goldspawn(mapafterreading, &room);
-    monsterspawn(mapafterreading, &room,&selected_difficulty);
-    mapafterreading[centerY][centerX] = 'P';
-}
-
-void settings_menu(int *music_on_ptr, int *selected_music_ptr , int *color,int *selected_difficulty) {
-    while (1) {
-        draw_menu(*color);   
-        int ch = getch(); 
-
-        if (ch == KEY_UP) {
-            if (current_option > 0) current_option--;
-        } else if (ch == KEY_DOWN) {
-            if (current_option < NUM_OPTIONS - 1) current_option++;
-        } else if (ch == KEY_LEFT || ch == KEY_RIGHT) {
-            if (current_option == 0) {  
-                *color = (*color == 28) ? 20 : (*color + 2);  
-            } else if (current_option == 1) {  
-                *selected_difficulty = (*selected_difficulty + 1) % NUM_DIFFICULTY;
-            } else if (current_option == 2) {  
-                *music_on_ptr = !(*music_on_ptr);  
-            } else if (current_option == 3) {  
-                *selected_music_ptr = (*selected_music_ptr + 1) % NUM_MUSIC;
-            }
-        } else if (ch == 10) { 
-            break;  
-        }
-    }
-}
-
-void create_weapon_inventory(const char *username) {
-    char filepath[256];
-    snprintf(filepath, sizeof(filepath), "%s/weapon_inventory.txt", username);
-    
-    FILE *file = fopen(filepath, "w");
-    if (!file) {
-        perror("Error creating file");
-        exit(EXIT_FAILURE);
-    }
-    
-    fprintf(file, "Type: 0, Quantity: 1\n");
-    fprintf(file, "Type: 1, Quantity: 0\n");
-    fprintf(file, "Type: 2, Quantity: 0\n");
-    fprintf(file, "Type: 3, Quantity: 0\n");
-    fprintf(file, "Type: 4, Quantity: 0\n");
-    
-    fclose(file);
-    printf("%s created successfully in folder %s!\n", filepath, username);
-}
-
-void forgot_password_page(struct User users[], int userCount) {
-    WINDOW *win = newwin(LINES, COLS, 0, 0);
-    if (!win) {
-        perror("Error creating window");
-        return;
-    }
-    
-    werase(win);
-    box(win, 0, 0);
-    
-    mvwprintw(win, 1, 2, "Password Recovery");
-
-    mvwprintw(win, 3, 2, "Enter your email: ");
-    curs_set(TRUE);
-    echo();
-    wrefresh(win);
-    
-    char inputEmail[MAX_LENGTH];
-    wgetnstr(win, inputEmail, MAX_LENGTH - 1);
-    int foundIndex = -1;
-    for (int i = 0; i < userCount; i++) {
-        if (strcmp(users[i].email, inputEmail) == 0) {
-            foundIndex = i;
-            break;
-        }
-    }
-    curs_set(FALSE);
-    noecho();
-    if (foundIndex != -1) {
-        mvwprintw(win, 5, 2, "Your password is: %s", users[foundIndex].password);
-        mvwprintw(win, 6, 2, "Your username is: %s", users[foundIndex].username);
-    } else {
-        mvwprintw(win, 5, 2, "Email not found!    ");
-    }
-    
-    mvwprintw(win, 7, 2, "Press any key to continue...");
-    wrefresh(win);
-    wgetch(win);
-
-    delwin(win);
-}
-
-void save_game_info(const char *username, int level, int score, int gold) {    
-    char file_path[256];
-    snprintf(file_path, sizeof(file_path), "%s/saved_info.txt", username);
-    
-    FILE *file = fopen(file_path, "w");
-    if (file == NULL) {
-        return;
-    }
-    fprintf(file, "Level: %d\n", level);
-    fprintf(file, "Score: %d\n", score);
-    fprintf(file, "Gold: %d\n", gold);
-    fclose(file);
-
-}
-
-void draw_box(int y, int x, int height, int width) {
-    mvprintw(y, x, "┌");
-    mvprintw(y, x + width, "┐");
-    mvprintw(y + height, x, "└");
-    mvprintw(y + height, x + width, "┘");
-
-    for (int i = 1; i < width; i++) {
-        mvprintw(y, x + i, "─");
-        mvprintw(y + height, x + i, "─");
-    }
-
-    for (int i = 1; i < height; i++) {
-        mvprintw(y + i, x, "│");
-        mvprintw(y + i, x + width, "│");
-    }
-}
-
-void draw_map(int start_y, int start_x, int color) {
-    init_color(20, 1000, 843, 0);  
-    init_pair(20, 20, COLOR_BLACK); 
-    init_color(22, 1000, 500, 0);  
-    init_pair(22, 22, COLOR_BLACK); 
-    init_color(24, 0, 0, 750);  
-    init_pair(24, 24, COLOR_BLACK);
-    init_color(26, 700, 1000, 1000); 
-    init_pair(26, 26, COLOR_BLACK);
-    init_color(28, 0, 700, 0);     
-    init_pair(28, 28, COLOR_BLACK); 
-
-    mvprintw(start_y, start_x, "-------"); 
-
-
-    for (int y = 1; y < 3 - 1; y++) {
-        mvprintw(start_y + y, start_x, "|"); 
-        for (int x = 1; x < 7 - 1; x++) {
-            if (x == character_x && y == character_y) {
-                attron(COLOR_PAIR(color));  
-                mvprintw(start_y + y, start_x + x, "@");  
-                attroff(COLOR_PAIR(color));  
-            } else {
-                mvprintw(start_y + y, start_x + x, ".");  
-            }
-        }
-        mvprintw(start_y + y, start_x + 7 - 1, "|"); 
-    }
-
-    mvprintw(start_y + 3 - 1, start_x, "-------");
-}
-
-void draw_menu(int color) { 
-    init_color(20, 1000, 843, 0);  
-    init_pair(20, 20, COLOR_BLACK); 
-    init_color(22, 1000, 500, 0);  
-    init_pair(22, 22, COLOR_BLACK);
-    init_color(24, 0, 0, 750);  
-    init_pair(24, 24, COLOR_BLACK);
-    init_color(26, 700, 1000, 1000); 
-    init_pair(26, 26, COLOR_BLACK); 
-    init_color(28, 0, 700, 0);     
-    init_pair(28, 28, COLOR_BLACK); 
-
-    clear();
-    refresh();
-    int height, width;
-    getmaxyx(stdscr, height, width);
-
-    int menu_height = 12;
-    int menu_width = 40;
-
-    int start_y = (height - menu_height) / 2;
-    int start_x = (width - menu_width) / 2;
-
-    draw_box(start_y, start_x, menu_height, menu_width);
-
-    mvprintw(start_y + 1, start_x + 12, "🎮 Game Settings 🎮");
-
-    mvprintw(start_y + 3, start_x + 4, "1. Character Color: ");
-    attron(COLOR_PAIR(color)); 
-    printw("███");
-    attroff(COLOR_PAIR(color));
-
-    mvprintw(start_y + 5, start_x + 4, "2. Game Difficulty: %s", difficulties[selected_difficulty]);
-    mvprintw(start_y + 7, start_x + 4, "3. Music: %s 🎵", music_options[music_on]);
-    mvprintw(start_y + 9, start_x + 4, "4. Select Track: %s", music_files[selected_music]);
-
-    draw_map(30, 30, color);  
-    mvprintw(start_y + 3 + (current_option * 2), start_x + 2, "➜");
-
-    mvprintw(start_y + 11, start_x + 2, "↑/↓ Move  </> Change  ⏎ Confirm");
-
-    refresh();
-}
-
-void load_game_info(const char *username, int *level, int *score, int *gold) {
-    char file_path[256];
-    snprintf(file_path, sizeof(file_path), "%s/saved_info.txt", username);
-    
-    FILE *file = fopen(file_path, "r");
-    if (file == NULL) {
-        return;
-    }
-    
-    fscanf(file, "Level: %d\n", level);
-    fscanf(file, "Score: %d\n", score);
-    fscanf(file, "Gold: %d\n", gold);
-    fclose(file);
-
-}
-
-void update_score(const char *username, int score) {
-    FILE *file = fopen("users.txt", "r");
-    FILE *temp = fopen(TEMP_FILE, "w");
-    
-    if (!file || !temp) {
-        perror("Error opening file");
-        exit(EXIT_FAILURE);
-    }
-    
-    char line[MAX_LINE_LENGTH];
-    int found = 0;
-    
-    while (fgets(line, sizeof(line), file)) {
-        char name[50], email[100], password[50];
-        int current_score, games_played;
-        
-        if (sscanf(line, "%s %s %s %d %d", name, email, password, &current_score, &games_played) == 5) {
-            if (strcmp(name, username) == 0) {  
-                current_score += score;
-                games_played += 1;
-                found = 1;
-            }
-            fprintf(temp, "%s %s %s %d %d\n", name, email, password, current_score, games_played);
-        } else {
-            fputs(line, temp);
-        }
-    }
-    
-    fclose(file);
-    fclose(temp);
-    
-    if (found) {
-        remove("users.txt");
-        rename(TEMP_FILE, "users.txt");
-        printf("Score updated successfully!\n");
-    } else {
-        remove(TEMP_FILE);
-        printf("User not found!\n");
-    }
 }
 
