@@ -330,6 +330,112 @@ int spawn_cehck_x;
 int spawn_check_y;
 
 
+
+
+
+
+void readPlayerData(const char *filename, char *username, char *password, char *email, int *score, int *gamesPlayed) {
+    FILE *file = fopen(filename, "r");
+    if (file == NULL) {
+        perror("failed to opne file");
+        exit(1);
+    }
+    fscanf(file, "%s %s %s %d %d", username, password, email, score, gamesPlayed);
+    fclose(file);
+}
+
+void displayProfile(const char *username, int score, int gamesPlayed, const char *email, int color) {
+    noecho(); 
+    curs_set(0); 
+
+    int height, width;
+    getmaxyx(stdscr, height, width);
+    box(stdscr, 0, 0);
+    
+    int box_x = width / 4;
+    int box_y = height / 4 - 2;
+    int box_width = width / 2;
+    int box_height = height / 2 + 10;
+    
+    for (int i = 0; i < box_width; i++) {
+        mvprintw(box_y, box_x + i, ")");
+        mvprintw(box_y + box_height, box_x + i, "(");
+    }
+    for (int i = 0; i < box_height; i++) {
+        mvprintw(box_y + i, box_x, "(");
+        mvprintw(box_y + i, box_x + box_width, ")");
+    }
+    mvprintw(height / 4, (width - strlen(username)) / 2, "<< %s >>", username);
+    mvprintw(height / 2, (width - 20) / 2, "score: %d", score);
+    mvprintw(height / 2 + 2, (width - 20) / 2, "games played: %d", gamesPlayed);
+    mvprintw(height - 4, (width - strlen(email)) / 2, "email: %s", email);
+    init_color(20, 1000, 843, 0);
+    init_pair(20, 20, COLOR_BLACK);//gold
+    init_color(21, 1000, 0, 0);
+    init_pair(21, 21, COLOR_BLACK);
+    init_color(22, 1000, 500, 0); 
+    init_pair(22, 22, COLOR_BLACK);//orange
+    init_color(23, 1000, 0 , 0);
+    init_pair(23, 23, COLOR_BLACK); //red
+    init_color(24, 0, 0, 750);  
+    init_pair(24, 24, COLOR_BLACK); //blue
+    init_color(25, 600, 500, 400);
+    init_pair(25, 25, COLOR_BLACK);
+    init_color(27, 0, 1000, 0);
+    init_pair(27, 27, COLOR_BLACK);
+    init_color(28, 0, 700, 0);//green
+    init_pair(28, 28, COLOR_BLACK);
+    init_color(29, 1000, 0, 1000);
+    init_pair(29, 29, COLOR_BLACK);
+    init_color(26, 700, 1000, 1000); 
+    init_pair(26, 26, COLOR_BLACK); 
+    init_color(30, 500, 500, 500);  
+    init_pair(30, 30, COLOR_BLACK);
+    attron(COLOR_PAIR(color));
+    mvprintw(height/ 2 + 5, width / 2 - 10, "       ___     ");
+    mvprintw(height/ 2 + 6, width / 2 - 10, "      /___\\");
+    mvprintw(height/ 2 + 7, width / 2 - 10, "     (|0 0|)  ");
+    mvprintw(height/ 2 + 8, width / 2 - 10, "   __/{\\U/}\\_ ___/vvv");
+    mvprintw(height/ 2 + 9, width / 2 - 10, "  / \\  {~}   / _|_P| ");
+    mvprintw(height/ 2 + 10, width / 2 - 10, "  | /\\  ~   /_/   ||");
+    mvprintw(height/ 2 + 11, width / 2 - 10, "  |_| (____)      ||");
+    mvprintw(height/ 2 + 12, width / 2 - 10, "  \\_]/______\\  /\\_||_/\\");
+    mvprintw(height/ 2 + 13, width / 2 - 10, "     _\\_||_/_ |] _||_ [|");
+    mvprintw(height/ 2 + 14, width / 2 - 10, "    (_,_||_,_) \\/ [] \\/");
+    attroff(COLOR_PAIR(color));
+
+        
+
+    
+    refresh();
+    getch(); 
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 int main() {
     srand(time(NULL));
 
@@ -472,6 +578,7 @@ refresh();
         "Countinue expeloring",
         "Score board",
         "Setting",
+        "Profile",
     };
     int n_choices = sizeof(choices) / sizeof(char *);
     printMenu(menu_win, highlight, choices, n_choices);
@@ -1021,6 +1128,20 @@ setting:
 
 
     settings_menu(&music_on, &selected_music ,&color,&selected_difficulty);
+    }else if (choice == 5){
+        ///profile menuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuuu
+    char  password_for_profile[100], email_for_profile[100];
+    int score_for_profile, gamesPlayed_for_profile;
+
+    clear();
+    refresh();
+    readPlayerData("users.txt", username, password_for_profile, email_for_profile, &score_for_profile, &gamesPlayed_for_profile);
+    displayProfile(username, score_for_profile, gamesPlayed_for_profile, email_for_profile,color);
+
+
+
+
+
     }
     if(camefromgame >= 1){
         camefromgame = 0;
@@ -2648,7 +2769,7 @@ double calculateDistance(Player player, Monster monster) {
 
 int check_for_combat(Player *player, Monster monsters[], int numMonsters) {
     for (int i = 0; i < numMonsters; i++) {
-        if (monsters[i].alive && calculateDistance(*player, monsters[i]) <= 2) {
+        if (monsters[i].alive && (calculateDistance(*player, monsters[i]) <= 1)) {
             gameState = COMBAT;
             currentTurn = PLAYER_TURN;
             return i;
@@ -2699,7 +2820,7 @@ void monster_attack(Player *player, Monster monsters[], int numMonsters, WINDOW 
 
 void moveMonsters(Player *player, Monster monsters[], int numMonsters, Point **mapafterreading) {
     for (int i = 0; i < numMonsters; i++) {
-        if (monsters[i].alive) {
+        if (monsters[i].alive && calculateDistance(*player , monsters[i]) > 1.5) {
             if (monsters[i].type == 'G') {
                 monsters[i].move_count++;
                 if (monsters[i].move_count >= 5) {
