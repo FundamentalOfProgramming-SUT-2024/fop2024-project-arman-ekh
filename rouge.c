@@ -3390,8 +3390,11 @@ void settings_menu(int *music_on_ptr, int *selected_music_ptr , int *color,int *
                 *selected_difficulty = (*selected_difficulty + 1) % NUM_DIFFICULTY;
             } else if (current_option == 2) {  
                 *music_on_ptr = !(*music_on_ptr);  
-            } else if (current_option == 3) {  
-                *selected_music_ptr = (*selected_music_ptr + 1) % NUM_MUSIC;
+            } else if (current_option == 3) { 
+                *music_on_ptr = !(*music_on_ptr); 
+                SDL_Delay(500); 
+                *music_on_ptr = !(*music_on_ptr);
+                *selected_music_ptr = (*selected_music_ptr + 1) % NUM_MUSIC; 
             }
         } else if (ch == 10) { 
             break;  
