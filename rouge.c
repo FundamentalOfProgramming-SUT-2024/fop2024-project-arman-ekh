@@ -21,7 +21,7 @@
 #define MAX_LENGTH 50
 #define WIDTH 120
 #define HEIGHT 45
-#define ROOMS 8
+#define ROOMS 9
 #define MAX_LINE_LENGTH 256
 
 #define NUM_OPTIONS 4
@@ -126,7 +126,7 @@ GameState gameState = EXPLORE;
 Turn currentTurn = PLAYER_TURN;
 
 
-int nor = 8;
+int nor = 9;
 typedef struct {
     int x, y, width, height;
 } Room;
@@ -237,7 +237,7 @@ void refillRooms(char mapafterreading[HEIGHT][WIDTH], Room *rooms);
 void printMap(char mapafterreading[HEIGHT][WIDTH]);
 void decorateRoom(char mapafterreading[HEIGHT][WIDTH], Room *room);
 void traproom(char mapafterreading[HEIGHT][WIDTH], Room *room);
-void spawnPlayer(char mapafterreading[HEIGHT][WIDTH], Room rooms[], int nor);
+int spawnPlayer(char mapafterreading[HEIGHT][WIDTH], Room rooms[], int nor,int spellroomindex);
 void createFileAndPrintMap(char mapafterreading[HEIGHT][WIDTH],char nameoftheplayer[100], int i);
 void goldspawn(char mapafterreading[HEIGHT][WIDTH], Room *room);
 void add_weapon_to_inventory(weapon_inventory *inventory, WeaponType type, int quantity, WINDOW *win);
@@ -1046,6 +1046,7 @@ setting:
 }
 
 
+
 void monsterspawn(char mapafterreading[HEIGHT][WIDTH], Room *room,int *selected_difficulty) {
     int MonsterSpawned = 0;
     int difficulty = *selected_difficulty * 50;
@@ -1388,9 +1389,9 @@ bool isPlayerInRoom(char mapafterreading[HEIGHT][WIDTH], Room *room) {
     return false;
 }
 
-void replaceSingleDoors(char mapafterreading[HEIGHT][WIDTH], Room rooms[ROOMS]) {
+void replaceSingleDoors(char mapafterreading[HEIGHT][WIDTH], Room rooms[ROOMS],int spawned) {
     for (int i = 0; i < ROOMS; i++) {
-        if (countRoomDoors(mapafterreading, &rooms[i]) == 1 && !isPlayerInRoom(mapafterreading, &rooms[i])) {
+        if (countRoomDoors(mapafterreading, &rooms[i]) == 1 && !isPlayerInRoom(mapafterreading, &rooms[i]) && i != spawned) {
             for (int x = rooms[i].x - 1; x <= rooms[i].x + rooms[i].width; x++) {
                 if (mapafterreading[rooms[i].y - 1][x] == '+') mapafterreading[rooms[i].y - 1][x] = '%';
                 if (mapafterreading[rooms[i].y + rooms[i].height][x] == '+') mapafterreading[rooms[i].y + rooms[i].height][x] = '%';
@@ -1419,6 +1420,92 @@ void placeCodePoint(char mapafterreading[HEIGHT][WIDTH], Room rooms[ROOMS]) {
     }
 }
 
+int transformRandomRoomToSpell(char mapafterreading[HEIGHT][WIDTH], Room rooms[ROOMS]) {
+    if (rand() % 2 == 0) { 
+        int roomIndex = rand() % ROOMS;
+        Room *room = &rooms[roomIndex];
+        
+        for (int x = room->x - 1; x <= room->x + room->width; x++) {
+            if(mapafterreading[room->y - 1][x] != '+' && mapafterreading[room->y - 1][x] != '#'){
+            mapafterreading[room->y - 1][x] = '1';
+            }
+            if(mapafterreading[room->y + room->height][x] != '+' &&mapafterreading[room->y + room->height][x] != '#' ){
+            mapafterreading[room->y + room->height][x] = '1';
+            }
+        }
+        for (int y = room->y - 1; y <= room->y + room->height; y++) {
+            if(mapafterreading[y][room->x-1] != '+' && mapafterreading[y][room->x-1] != '#'){
+            mapafterreading[y][room->x - 1] = '3';
+            }
+            if(mapafterreading[y][room->x + room->width] != '+' && mapafterreading[y][room->x + room->width] != '#'){
+            mapafterreading[y][room->x + room->width] = '3';
+            }
+        }
+
+
+        for (int y = room->y; y < room->y + room->height; y++) {
+            for (int x = room->x; x < room->x + room->width; x++) {
+                mapafterreading[y][x] = '7';
+                if(rand() % 10 == 0){
+                mapafterreading[y][x] = 'h';  
+                } 
+                if(rand() % 15 == 0){
+                mapafterreading[y][x] = 's';                      
+                }
+                if(rand() % 25 == 0){
+                mapafterreading[y][x] = 'd';  
+                }
+            }
+        }
+        
+        int spellX = room->x + rand() % room->width;
+        int spellY = room->y + rand() % room->height;
+        mapafterreading[spellY][spellX] = 'S';
+        return roomIndex;
+    }else{
+        return 100;
+    }
+}
+
+void transformRandomRoomToImaganiery(char mapafterreading[HEIGHT][WIDTH], Room rooms[ROOMS]) {
+    if (1) { 
+        int roomIndex = rand() % ROOMS;
+        Room *room = &rooms[roomIndex];
+        
+        for (int x = room->x - 1; x <= room->x + room->width; x++) {
+            if(mapafterreading[room->y - 1][x] != '+' && mapafterreading[room->y - 1][x] != '#'){
+            mapafterreading[room->y - 1][x] = '2';
+            }
+            if(mapafterreading[room->y + room->height][x] != '+' &&mapafterreading[room->y + room->height][x] != '#'){
+            mapafterreading[room->y + room->height][x] = '2';
+            }
+        }
+        for (int y = room->y - 1; y <= room->y + room->height; y++) {
+            if(mapafterreading[y][room->x-1] != '+' && mapafterreading[y][room->x-1] != '#'){
+            mapafterreading[y][room->x - 1] = ')';
+            }
+            if(mapafterreading[y][room->x + room->width] != '+' && mapafterreading[y][room->x + room->width] != '#'){
+            mapafterreading[y][room->x + room->width] = ')';
+            }
+        }
+
+
+        for (int y = room->y; y < room->y + room->height; y++) {
+            for (int x = room->x; x < room->x + room->width; x++) {
+                mapafterreading[y][x] = '(';
+                if(rand() % 10 == 0){
+                mapafterreading[y][x] = ']';  //fake gold
+                } 
+                if(rand() % 15 == 0){
+                mapafterreading[y][x] = '['; //fake black gold                     
+                }
+            }
+        }
+        
+        return ;
+    }
+}
+
 void generateMap(char mapafterreading[HEIGHT][WIDTH]) {
     for (int i = 0; i < HEIGHT; i++) {
         for (int j = 0; j < WIDTH; j++) {
@@ -1443,12 +1530,14 @@ void generateMap(char mapafterreading[HEIGHT][WIDTH]) {
     for (int i = 0; i < ROOMS; i++) {
         traproom(mapafterreading, &rooms[i]);
     }
-    spawnPlayer(mapafterreading, rooms, nor);
-    replaceSingleDoors(mapafterreading, rooms);
+    int spellroom = transformRandomRoomToSpell(mapafterreading, rooms);
+    transformRandomRoomToImaganiery(mapafterreading, rooms);
+    int spawned = spawnPlayer(mapafterreading, rooms, nor,spellroom);
+    replaceSingleDoors(mapafterreading, rooms,spawned);
     placeCodePoint(mapafterreading, rooms);
 }
 
-void spawnPlayer(char mapafterreading[HEIGHT][WIDTH], Room rooms[], int nor) {
+int spawnPlayer(char mapafterreading[HEIGHT][WIDTH], Room rooms[], int nor,int spellroomindex) {
     for (int i = 0; i < nor; i++) {
         Room room = rooms[i];
         bool hasExit = false;
@@ -1460,14 +1549,14 @@ void spawnPlayer(char mapafterreading[HEIGHT][WIDTH], Room rooms[], int nor) {
                     break;
                 }
             }
-            if (hasExit) break;
+            if (hasExit ) break;
         }
 
-        if (!hasExit) {
+        if (!hasExit && spellroomindex != i) {
             int spawnX = room.x + rand() % room.width;
             int spawnY = room.y + rand() % room.height;
             mapafterreading[spawnY][spawnX] = 'P'; 
-            return;
+            return i;
         }
     }
 }
@@ -1499,19 +1588,19 @@ void decorateRoom(char mapafterreading[HEIGHT][WIDTH], Room *room) {
                     if(rand() % 10 == 0){
                     mapafterreading[y][x] = 'f';  
                     } 
-                    if(rand() % 15 == 0){
+                    if(rand() % 25 == 0){
                     mapafterreading[y][x] = 'h';  
                     } 
                     if(rand() % 20 == 0){
                     mapafterreading[y][x] = 'm';  
                     }
-                    if(rand() % 25 == 0){
+                    if(rand() % 35 == 0){
                     mapafterreading[y][x] = 's';  
                     }
                     if(rand() % 30 == 0){
                     mapafterreading[y][x] = 'p';  
                     }
-                    if(rand() % 35 == 0){
+                    if(rand() % 45 == 0){
                     mapafterreading[y][x] = 'd';  
                     }
             }
@@ -2066,7 +2155,7 @@ void display_mapafterreading(Point **mapafterreading, int rows, int cols, int co
     init_pair(25, 25, COLOR_BLACK);
     init_color(27, 0, 1000, 0);
     init_pair(27, 27, COLOR_BLACK);
-    init_color(28, 0, 700, 0);
+    init_color(28, 0, 700, 0);//green
     init_pair(28, 28, COLOR_BLACK);
     init_color(29, 1000, 0, 1000);
     init_pair(29, 29, COLOR_BLACK);
@@ -2084,7 +2173,17 @@ void display_mapafterreading(Point **mapafterreading, int rows, int cols, int co
                     attron(COLOR_PAIR(20)); 
                     mvprintw(i, j, "%c", mapafterreading[i][j].symbol);
                     attroff(COLOR_PAIR(20));
-                } else if(mapafterreading[i][j].symbol == '|') {
+                }else if(mapafterreading[i][j].symbol == ']') {
+                    attron(COLOR_PAIR(20)); 
+                    mvprintw(i, j, "c") ;
+                    attroff(COLOR_PAIR(20));
+                }
+                else if(mapafterreading[i][j].symbol == '[') {
+                    attron(COLOR_PAIR(30)); 
+                    mvprintw(i, j, "C") ;
+                    attroff(COLOR_PAIR(30));
+                }
+                else if(mapafterreading[i][j].symbol == '|') {
                     attron(COLOR_PAIR(wallcolor)); 
                     mvprintw(i, j, "│");
                     attroff(COLOR_PAIR(wallcolor));                  
@@ -2182,7 +2281,90 @@ void display_mapafterreading(Point **mapafterreading, int rows, int cols, int co
                     attron(COLOR_PAIR(color));
                     mvprintw(i, j, "Δ");
                     attroff(COLOR_PAIR(color));
-                } 
+                }else if(mapafterreading[i][j].symbol == '1'){
+                    attron(COLOR_PAIR(23));
+                    mvprintw(i, j, "─");
+                    attroff(COLOR_PAIR(23));
+                }
+                else if(mapafterreading[i][j].symbol == '2'){
+                    attron(COLOR_PAIR(30));
+                    mvprintw(i, j, "─");
+                    attroff(COLOR_PAIR(30));
+                }
+                else if(mapafterreading[i][j].symbol == '3'){
+                    int check_y = i;
+                    if(check_y == 0){
+                        check_y++;
+                    }
+
+                    if( mapafterreading[i][j-1].symbol == ' ' && mapafterreading[check_y-1][j].symbol == ' ' ) {
+                        attron(COLOR_PAIR(23)); 
+                        mvprintw(i, j, "┌");
+                        attroff(COLOR_PAIR(23));                        
+                    }
+                    else if(mapafterreading[i][j+1].symbol == ' ' && mapafterreading[check_y-1][j].symbol == ' ') {
+                        attron(COLOR_PAIR(23)); 
+                        mvprintw(i, j, "┐");
+                        attroff(COLOR_PAIR(23));                       
+                    }
+                    
+                    else if(mapafterreading[i][j-1].symbol == ' ' && mapafterreading[i+1][j].symbol == ' ') {
+                        attron(COLOR_PAIR(23)); 
+                        mvprintw(i, j, "└");
+                        attroff(COLOR_PAIR(23));                       
+                    }
+                    else if(mapafterreading[i][j+1].symbol == ' ' && mapafterreading[i+1][j].symbol == ' ') {
+                        attron(COLOR_PAIR(23)); 
+                        mvprintw(i, j, "┘");
+                        attroff(COLOR_PAIR(23));                       
+                    }
+                    else {
+                        attron(COLOR_PAIR(23)); 
+                        mvprintw(i, j, "│");
+                        attroff(COLOR_PAIR(23));   
+                    }
+                }else if(mapafterreading[i][j].symbol == ')'){
+                    int check_y = i;
+                    if(check_y == 0){
+                        check_y++;
+                    }
+
+                    if( mapafterreading[i][j-1].symbol == ' ' && mapafterreading[check_y-1][j].symbol == ' ' ) {
+                        attron(COLOR_PAIR(30)); 
+                        mvprintw(i, j, "┌");
+                        attroff(COLOR_PAIR(30));                        
+                    }
+                    else if(mapafterreading[i][j+1].symbol == ' ' && mapafterreading[check_y-1][j].symbol == ' ') {
+                        attron(COLOR_PAIR(30)); 
+                        mvprintw(i, j, "┐");
+                        attroff(COLOR_PAIR(30));                       
+                    }
+                    
+                    else if(mapafterreading[i][j-1].symbol == ' ' && mapafterreading[i+1][j].symbol == ' ') {
+                        attron(COLOR_PAIR(30)); 
+                        mvprintw(i, j, "└");
+                        attroff(COLOR_PAIR(30));                       
+                    }
+                    else if(mapafterreading[i][j+1].symbol == ' ' && mapafterreading[i+1][j].symbol == ' ') {
+                        attron(COLOR_PAIR(30)); 
+                        mvprintw(i, j, "┘");
+                        attroff(COLOR_PAIR(30));                       
+                    }
+                    else {
+                        attron(COLOR_PAIR(30)); 
+                        mvprintw(i, j, "│");
+                        attroff(COLOR_PAIR(30));   
+                    }
+                }
+                else if(mapafterreading[i][j].symbol == '7'){
+                    attron(COLOR_PAIR(23));
+                    mvprintw(i, j, ".");
+                    attroff(COLOR_PAIR(23));
+                }else if(mapafterreading[i][j].symbol == '('){
+                    attron(COLOR_PAIR(23));
+                    mvprintw(i, j, ".");
+                    attroff(COLOR_PAIR(23));
+                }
                 else {
                     mvprintw(i, j, "%c", mapafterreading[i][j].symbol);
                 }
@@ -2673,7 +2855,6 @@ void shootWeaponWithDirection(WINDOW *win,weapon_inventory *inventory,Monster mo
     }
 }
 
-
 void generatePassword(int *correct_pass) {
     *correct_pass = 100 + rand() % 900;
 }
@@ -2681,7 +2862,6 @@ void generatePassword(int *correct_pass) {
 int checkPassword(int *correct_pass, int inputPassword) {
     return (*correct_pass == inputPassword) ? 1 : 0;
 }
-
 
 void move_character(int *lvl,Point **mapafterreading, int *x, int *y, int new_x, int new_y, int rows, int cols, int spawn_x, int spawn_y, int *health, int *gold_score, food_inventoy *food_inventoy, WINDOW *food_inventoy_win, spell_inventory *spell_inventory, WINDOW *spell_inventory_win, weapon_inventory *weapon_inventory, WINDOW *weapon_inventory_win) {
     static char previous_symbol = '>';
@@ -2692,7 +2872,9 @@ void move_character(int *lvl,Point **mapafterreading, int *x, int *y, int new_x,
 
     if (new_x >= 0 && new_x < rows && new_y >= 0 && new_y < cols 
     && mapafterreading[new_x][new_y].symbol != '|' && mapafterreading[new_x][new_y].symbol != '-' 
-    && mapafterreading[new_x][new_y].symbol != 'O' && mapafterreading[new_x][new_y].symbol != ' '&& mapafterreading[new_x][new_y].symbol != '%') {
+    && mapafterreading[new_x][new_y].symbol != 'O' && mapafterreading[new_x][new_y].symbol != ' '
+     && mapafterreading[new_x][new_y].symbol != '2' && mapafterreading[new_x][new_y].symbol != ')'
+    && mapafterreading[new_x][new_y].symbol != '%' && mapafterreading[new_x][new_y].symbol != '1'&& mapafterreading[new_x][new_y].symbol != '3') {
         mapafterreading[*x][*y].symbol = (*x == spawn_x && *y == spawn_y) ? '>' : previous_symbol;
 
         previous_symbol = 
@@ -2702,7 +2884,7 @@ void move_character(int *lvl,Point **mapafterreading, int *x, int *y, int new_x,
         || mapafterreading[new_x][new_y].symbol == 's'  || mapafterreading[new_x][new_y].symbol == 'I' || mapafterreading[new_x][new_y].symbol == 'h'
         || mapafterreading[new_x][new_y].symbol == 'm'|| mapafterreading[new_x][new_y].symbol == 'p'|| mapafterreading[new_x][new_y].symbol == 'i'
         || mapafterreading[new_x][new_y].symbol == 'k' || mapafterreading[new_x][new_y].symbol == '*'|| mapafterreading[new_x][new_y].symbol == '&' 
-        || mapafterreading[new_x][new_y].symbol == 'K' 
+        || mapafterreading[new_x][new_y].symbol == 'K' || mapafterreading[new_x][new_y].symbol == ']'|| mapafterreading[new_x][new_y].symbol == '['  
         ) ? '.' : mapafterreading[new_x][new_y].symbol;
 
         if (mapafterreading[new_x][new_y].trap) {
@@ -2717,7 +2899,10 @@ void move_character(int *lvl,Point **mapafterreading, int *x, int *y, int new_x,
         else if (mapafterreading[new_x][new_y].symbol == 'C') {//black gold
             *gold_score += 10;
         }
-        else if (mapafterreading[new_x][new_y].symbol == '!') {//black gold
+        else if (mapafterreading[new_x][new_y].symbol == '7') {//black gold
+            (*health)--;
+        }
+        else if (mapafterreading[new_x][new_y].symbol == '!') {//pass maker
             generatePassword(&correct_pass);
             hasthepass = 1;
    
