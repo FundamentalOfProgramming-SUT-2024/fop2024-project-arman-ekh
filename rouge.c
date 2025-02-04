@@ -257,7 +257,7 @@ void reveal_points(Point **mapafterreading, int char_x, int char_y, int rows, in
 void display_game_over() ;
 void display_health_bar(Player *player ,int max_health);
 void display_gold_score(int gold_score);
-void move_character(int *lvl,Point **mapafterreading, int *x, int *y, int new_x, int new_y, int rows, int cols, int spawn_x, int spawn_y, int *health, int *gold_score, food_inventoy *food_inventoy, WINDOW *food_inventoy_win, spell_inventory *spell_inventory, WINDOW *spell_inventory_win, weapon_inventory *weapon_inventory, WINDOW *weapon_inventory_win);
+void move_character(int *music_on_ptr, int *selected_music_ptr ,int *lvl,Point **mapafterreading, int *x, int *y, int new_x, int new_y, int rows, int cols, int spawn_x, int spawn_y, int *health, int *gold_score, food_inventoy *food_inventoy, WINDOW *food_inventoy_win, spell_inventory *spell_inventory, WINDOW *spell_inventory_win, weapon_inventory *weapon_inventory, WINDOW *weapon_inventory_win) ;
 void display_hunger(int hunger);
 void load_food_inventory_from_file(food_inventoy *food_inventoy, const char *filename);
 void load_spell_inventory_from_file(spell_inventory *inventory, const char *filename);
@@ -811,7 +811,7 @@ int attacker_num;
         if (gameState == EXPLORE) {
         switch (ch) {
             case 'w':
-                move_character(&lvl,mapafterreading, &player.x, &player.y, player.x - 1, player.y, rows, cols, spawn_x, spawn_y, &player.health, &gold_score, &food_inventoy, food_inventoy_win, &spell_inventory, spell_inventory_win, &weapon_inventory, weapon_inventory_win);
+                move_character(&music_on, &selected_music ,&lvl,mapafterreading, &player.x, &player.y, player.x - 1, player.y, rows, cols, spawn_x, spawn_y, &player.health, &gold_score, &food_inventoy, food_inventoy_win, &spell_inventory, spell_inventory_win, &weapon_inventory, weapon_inventory_win);
                 time_without_food++;
             if(lvl_check > lvl || lvl_check < lvl){
                 save_seen_points(mapafterreading, rows, cols, filename);
@@ -825,7 +825,7 @@ int attacker_num;
             }
                 break;
             case 's':
-                move_character(&lvl,mapafterreading, &player.x, &player.y, player.x + 1, player.y, rows, cols, spawn_x, spawn_y, &player.health, &gold_score, &food_inventoy, food_inventoy_win, &spell_inventory, spell_inventory_win, &weapon_inventory, weapon_inventory_win);
+                move_character(&music_on, &selected_music ,&lvl,mapafterreading, &player.x, &player.y, player.x + 1, player.y, rows, cols, spawn_x, spawn_y, &player.health, &gold_score, &food_inventoy, food_inventoy_win, &spell_inventory, spell_inventory_win, &weapon_inventory, weapon_inventory_win);
                 time_without_food++;
             if(lvl_check > lvl || lvl_check < lvl){
                 save_seen_points(mapafterreading, rows, cols, filename);
@@ -840,7 +840,7 @@ int attacker_num;
             }
                 break;
             case 'a':
-                move_character(&lvl ,mapafterreading, &player.x, &player.y, player.x, player.y - 1, rows, cols, spawn_x, spawn_y, &player.health, &gold_score, &food_inventoy, food_inventoy_win, &spell_inventory, spell_inventory_win, &weapon_inventory, weapon_inventory_win);
+                move_character(&music_on, &selected_music ,&lvl ,mapafterreading, &player.x, &player.y, player.x, player.y - 1, rows, cols, spawn_x, spawn_y, &player.health, &gold_score, &food_inventoy, food_inventoy_win, &spell_inventory, spell_inventory_win, &weapon_inventory, weapon_inventory_win);
                 time_without_food++;
                 if(lvl_check > lvl || lvl_check < lvl){
                     save_seen_points(mapafterreading, rows, cols, filename);
@@ -853,7 +853,7 @@ int attacker_num;
                 }
                 break;
             case 'd':
-                move_character(&lvl ,mapafterreading, &player.x, &player.y, player.x, player.y + 1, rows, cols, spawn_x, spawn_y, &player.health, &gold_score, &food_inventoy, food_inventoy_win, &spell_inventory, spell_inventory_win, &weapon_inventory, weapon_inventory_win);
+                move_character(&music_on, &selected_music ,&lvl ,mapafterreading, &player.x, &player.y, player.x, player.y + 1, rows, cols, spawn_x, spawn_y, &player.health, &gold_score, &food_inventoy, food_inventoy_win, &spell_inventory, spell_inventory_win, &weapon_inventory, weapon_inventory_win);
                 time_without_food++;
                 if(lvl_check > lvl || lvl_check < lvl){
                     save_seen_points(mapafterreading, rows, cols, filename);
@@ -866,7 +866,7 @@ int attacker_num;
                 }
                 break;
             case 'q':
-                move_character(&lvl ,mapafterreading, &player.x, &player.y, player.x - 1, player.y - 1, rows, cols, spawn_x, spawn_y, &player.health, &gold_score, &food_inventoy, food_inventoy_win, &spell_inventory, spell_inventory_win, &weapon_inventory, weapon_inventory_win);
+                move_character(&music_on, &selected_music ,&lvl ,mapafterreading, &player.x, &player.y, player.x - 1, player.y - 1, rows, cols, spawn_x, spawn_y, &player.health, &gold_score, &food_inventoy, food_inventoy_win, &spell_inventory, spell_inventory_win, &weapon_inventory, weapon_inventory_win);
                 time_without_food++;
                 if(lvl_check > lvl || lvl_check < lvl){
                     save_seen_points(mapafterreading, rows, cols, filename);
@@ -879,7 +879,7 @@ int attacker_num;
                 }
                 break;
             case 'e':
-                move_character(&lvl ,mapafterreading, &player.x, &player.y, player.x - 1, player.y + 1, rows, cols, spawn_x, spawn_y, &player.health, &gold_score, &food_inventoy, food_inventoy_win, &spell_inventory, spell_inventory_win, &weapon_inventory, weapon_inventory_win);
+                move_character(&music_on, &selected_music ,&lvl ,mapafterreading, &player.x, &player.y, player.x - 1, player.y + 1, rows, cols, spawn_x, spawn_y, &player.health, &gold_score, &food_inventoy, food_inventoy_win, &spell_inventory, spell_inventory_win, &weapon_inventory, weapon_inventory_win);
                 time_without_food++;
                 if(lvl_check > lvl || lvl_check < lvl){
                     save_seen_points(mapafterreading, rows, cols, filename);
@@ -892,7 +892,7 @@ int attacker_num;
                 }
                 break;
             case 'z':
-                move_character(&lvl ,mapafterreading, &player.x, &player.y, player.x + 1, player.y - 1, rows, cols, spawn_x, spawn_y, &player.health, &gold_score, &food_inventoy, food_inventoy_win, &spell_inventory, spell_inventory_win, &weapon_inventory, weapon_inventory_win);
+                move_character(&music_on, &selected_music ,&lvl ,mapafterreading, &player.x, &player.y, player.x + 1, player.y - 1, rows, cols, spawn_x, spawn_y, &player.health, &gold_score, &food_inventoy, food_inventoy_win, &spell_inventory, spell_inventory_win, &weapon_inventory, weapon_inventory_win);
                 time_without_food++;
                 if(lvl_check > lvl || lvl_check < lvl){
                     save_seen_points(mapafterreading, rows, cols, filename);
@@ -905,7 +905,7 @@ int attacker_num;
                 }
                 break;
             case 'c':
-                move_character(&lvl ,mapafterreading, &player.x, &player.y, player.x + 1, player.y + 1, rows, cols, spawn_x, spawn_y, &player.health, &gold_score, &food_inventoy, food_inventoy_win, &spell_inventory, spell_inventory_win, &weapon_inventory, weapon_inventory_win);
+                move_character(&music_on, &selected_music ,&lvl ,mapafterreading, &player.x, &player.y, player.x + 1, player.y + 1, rows, cols, spawn_x, spawn_y, &player.health, &gold_score, &food_inventoy, food_inventoy_win, &spell_inventory, spell_inventory_win, &weapon_inventory, weapon_inventory_win);
                 time_without_food++;
                 if(lvl_check > lvl || lvl_check < lvl){
                     save_seen_points(mapafterreading, rows, cols, filename);
@@ -1320,6 +1320,7 @@ void signup(char *filename)
 {
 
     char password[MAX_PASSWORD_LENGTH];
+    char password_random[MAX_PASSWORD_LENGTH];
     char email[MAX_EMAIL_LENGTH];
     score = 0;
     games_played = 0;
@@ -1347,8 +1348,8 @@ void signup(char *filename)
     clear();
     draw_border();
         int passwordLength = 8; 
-    char *password = generate_random_password(passwordLength);
-    mvprintw(LINES / 2  - 3  , COLS / 2.5, "Randomly generated pass: %s",password);
+    char *password_random = generate_random_password(passwordLength);
+    mvprintw(LINES / 2  - 3  , COLS / 2.5, "Randomly generated pass: %s",password_random);
 
     mvprintw(LINES / 2  , COLS / 2.5, "we should have a secret word do you have any idea?...");
 
@@ -1557,9 +1558,13 @@ int transformRandomRoomToSpell(char mapafterreading[HEIGHT][WIDTH], Room rooms[R
         for (int y = room->y - 1; y <= room->y + room->height; y++) {
             if(mapafterreading[y][room->x-1] != '+' && mapafterreading[y][room->x-1] != '#'){
             mapafterreading[y][room->x - 1] = '3';
+            }else if(mapafterreading[y][room->x-1] == '+' ){
+              mapafterreading[y][room->x - 1] = '^';  
             }
             if(mapafterreading[y][room->x + room->width] != '+' && mapafterreading[y][room->x + room->width] != '#'){
             mapafterreading[y][room->x + room->width] = '3';
+            }else if(mapafterreading[y][room->x + room->width] == '+'){
+                mapafterreading[y][room->x + room->width] = '^';
             }
         }
 
@@ -2347,6 +2352,9 @@ void display_mapafterreading(Point **mapafterreading, int rows, int cols, int co
                     mvprintw(i, j, "O");
                     attroff(COLOR_PAIR(wallcolor));                  
                 } 
+                else if(mapafterreading[i][j].symbol == '^') { 
+                    mvprintw(i, j, "+");                
+                } 
                 else if(mapafterreading[i][j].symbol == '#') {
                     mvprintw(i, j, "░");                  
                 }
@@ -2984,7 +2992,7 @@ int checkPassword(int *correct_pass, int inputPassword) {
     return (*correct_pass == inputPassword) ? 1 : 0;
 }
 
-void move_character(int *lvl,Point **mapafterreading, int *x, int *y, int new_x, int new_y, int rows, int cols, int spawn_x, int spawn_y, int *health, int *gold_score, food_inventoy *food_inventoy, WINDOW *food_inventoy_win, spell_inventory *spell_inventory, WINDOW *spell_inventory_win, weapon_inventory *weapon_inventory, WINDOW *weapon_inventory_win) {
+void move_character(int *music_on_ptr, int *selected_music_ptr ,int *lvl,Point **mapafterreading, int *x, int *y, int new_x, int new_y, int rows, int cols, int spawn_x, int spawn_y, int *health, int *gold_score, food_inventoy *food_inventoy, WINDOW *food_inventoy_win, spell_inventory *spell_inventory, WINDOW *spell_inventory_win, weapon_inventory *weapon_inventory, WINDOW *weapon_inventory_win) {
     static char previous_symbol = '>';
     int pass = 0;
     int hasthepass = 0 ;
@@ -3022,6 +3030,12 @@ void move_character(int *lvl,Point **mapafterreading, int *x, int *y, int new_x,
         }
         else if (mapafterreading[new_x][new_y].symbol == '7') {//black gold
             (*health)--;
+        }
+        else if(mapafterreading[new_x][new_y].symbol == '^'){
+                *music_on_ptr = !(*music_on_ptr); 
+                SDL_Delay(100); 
+                *music_on_ptr = !(*music_on_ptr);
+                *selected_music_ptr = 2; 
         }
         else if (mapafterreading[new_x][new_y].symbol == '!') {//pass maker
             generatePassword(&correct_pass);
@@ -3143,6 +3157,7 @@ void move_character(int *lvl,Point **mapafterreading, int *x, int *y, int new_x,
             refresh();
             haskey++;
         }
+
         if(mapafterreading[new_x][new_y].symbol == '>'){// pele
             char command;
             if(new_x == spawn_x && new_y == spawn_y && *lvl > 1){
@@ -3630,4 +3645,3 @@ void update_score(const char *username, int score) {
         printf("User not found!\n");
     }
 }
-
